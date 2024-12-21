@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+
+<!--
+
+    What Will Red Send Out Next?
+    Copyright (C) 2024 Snowy
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, under ONLY version 3 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    See <https://www.gnu.org/licenses/> for licenses.
+
+    ---
+
+    NOTE: I do not own Pokémon or Pokémon Gold, Silver, or Crystal. Those
+    are property of The Pokémon Company.
+    
+    Please support the official games (if/when TPC/Nintendo allow it).
+
+-->
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=880px" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+<meta content="What will Red send out next?" property="og:title" />
+<meta content="Tool that tells you what order Red will send out his Pokémon." property="og:description" />
+<style>
+* {
+    font-family: 'Roboto Condensed', sans-serif;
+}
+body {
+    background-color: #222222;
+    margin: 10px;
+}
+h1 {
+    font-size: 24px;
+    color: #FAFAFA;
+    margin: 0;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+p, #order {
+    font-size: 16px;
+    color: #FAFAFA;
+    line-height: 1.4;
+    margin: 0;
+}
+table {
+    border-collapse: collapse;
+    width: 852px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+th {
+    border-bottom: #AAAAAA;
+    border-width: 2px;
+    border-bottom-style: solid;
+    padding: 4px;
+    text-align: center;
+    color: #FAFAFA;
+}
+td {
+    padding: 4px;
+    text-align: center;
+}
+li {
+    color: #FAFAFA;
+}
+#order {
+    border: 1px solid #AAAAAA;
+    border-width: 2px;
+    width: 852px;
+    height: 232px;
+    padding: 4px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+p.error {
+    color: #FF9999
+}
+p.fatalerror {
+    color: #FF2222
+}
+td p {
+    margin: 0;
+    line-height: 1;
+}
+td {
+    vertical-align: bottom;
+}
+
+</style>
+<script>
+
+const allTypes = [
+    "None",
+    "Normal",
+    "Fighting",
+    "Flying",
+    "Poison",
+    "Ground",
+    "Rock",
+    "Bird",
+    "Bug",
+    "Ghost",
+    "Steel",
+    "???",
+    "Fire",
+    "Water",
+    "Grass",
+    "Electric",
+    "Psychic",
+    "Ice",
+    "Dragon",
+    "Dark",
+]
+
+const allMoves = [
+    ["None", "None"], // apparently programmed into the game
+    ["POUND", "Normal"],
+    ["KARATE CHOP", "Fighting"],
+    ["DOUBLESLAP", "Normal"],
+    ["COMET PUNCH", "Normal"],
+    ["MEGA PUNCH", "Normal"],
+    ["PAY DAY", "Normal"],
+    ["FIRE PUNCH", "Fire"],
+    ["ICE PUNCH", "Ice"],
+    ["THUNDERPUNCH", "Electric"],
+    ["SCRATCH", "Normal"],
+    ["VICEGRIP", "Normal"],
+    ["GUILLOTINE", "Normal"],
+    ["RAZOR WIND", "Normal"],
+    ["SWORDS DANCE", "Normal"],
+    ["CUT", "Normal"],
+    ["GUST", "Flying"],
+    ["WING ATTACK", "Flying"],
+    ["WHIRLWIND", "Normal"],
+    ["FLY", "Flying"],
+    ["BIND", "Normal"],
+    ["SLAM", "Normal"],
+    ["VINE WHIP", "Grass"],
+    ["STOMP", "Normal"],
+    ["DOUBLE KICK", "Fighting"],
+    ["MEGA KICK", "Normal"],
+    ["JUMP KICK", "Fighting"],
+    ["ROLLING KICK", "Fighting"],
+    ["SAND ATTACK", "Ground"],
+    ["HEADBUTT", "Normal"],
+    ["HORN ATTACK", "Normal"],
+    ["FURY ATTACK", "Normal"],
+    ["HORN DRILL", "Normal"],
+    ["TACKLE", "Normal"],
+    ["BODY SLAM", "Normal"],
+    ["WRAP", "Normal"],
+    ["TAKE DOWN", "Normal"],
+    ["THRASH", "Normal"],
+    ["DOUBLE EDGE", "Normal"],
+    ["TAIL WHIP", "Normal"],
+    ["POISON STING", "Poison"],
+    ["TWINEEDLE", "Bug"],
+    ["PIN MISSILE", "Bug"],
+    ["LEER", "Normal"],
+    ["BITE", "Dark"],
+    ["GROWL", "Normal"],
+    ["ROAR", "Normal"],
+    ["SING", "Normal"],
+    ["SUPERSONIC", "Normal"],
+    ["SONICBOOM", "Normal"],
+    ["DISABLE", "Normal"],
+    ["ACID", "Poison"],
+    ["EMBER", "Fire"],
+    ["FLAMETHROWER", "Fire"],
+    ["MIST", "Ice"],
+    ["WATER GUN", "Water"],
+    ["HYDRO PUMP", "Water"],
+    ["SURF", "Water"],
+    ["ICE BEAM", "Ice"],
+    ["BLIZZARD", "Ice"],
+    ["PSYBEAM", "Psychic"],
+    ["BUBBLEBEAM", "Water"],
+    ["AURORA BEAM", "Ice"],
+    ["HYPER BEAM", "Normal"],
+    ["PECK", "Flying"],
+    ["DRILL PECK", "Flying"],
+    ["SUBMISSION", "Fighting"],
+    ["LOW KICK", "Fighting"],
+    ["COUNTER", "Fighting"],
+    ["SEISMIC TOSS", "Fighting"],
+    ["STRENGTH", "Normal"],
+    ["ABSORB", "Grass"],
+    ["MEGA DRAIN", "Grass"],
+    ["LEECH SEED", "Grass"],
+    ["GROWTH", "Normal"],
+    ["RAZOR LEAF", "Grass"],
+    ["SOLARBEAM", "Grass"],
+    ["POISONPOWDER", "Poison"],
+    ["STUN SPORE", "Grass"],
+    ["SLEEP POWDER", "Grass"],
+    ["PETAL DANCE", "Grass"],
+    ["STRING SHOT", "Bug"],
+    ["DRAGON RAGE", "Dragon"],
+    ["FIRE SPIN", "Fire"],
+    ["THUNDERSHOCK", "Electric"],
+    ["THUNDERBOLT", "Electric"],
+    ["THUNDER WAVE", "Electric"],
+    ["THUNDER", "Electric"],
+    ["ROCK THROW", "Rock"],
+    ["EARTHQUAKE", "Ground"],
+    ["FISSURE", "Ground"],
+    ["DIG", "Ground"],
+    ["TOXIC", "Poison"],
+    ["CONFUSION", "Psychic"],
+    ["PSYCHIC", "Psychic"],
+    ["HYPNOSIS", "Psychic"],
+    ["MEDITATE", "Psychic"],
+    ["AGILITY", "Psychic"],
+    ["QUICK ATTACK", "Normal"],
+    ["RAGE", "Normal"],
+    ["TELEPORT", "Psychic"],
+    ["NIGHT SHADE", "Ghost"],
+    ["MIMIC", "Normal"],
+    ["SCREECH", "Normal"],
+    ["DOUBLE TEAM", "Normal"],
+    ["RECOVER", "Normal"],
+    ["HARDEN", "Normal"],
+    ["MINIMIZE", "Normal"],
+    ["SMOKESCREEN", "Normal"],
+    ["CONFUSE RAY", "Ghost"],
+    ["WITHDRAW", "Water"],
+    ["DEFENSE CURL", "Normal"],
+    ["BARRIER", "Psychic"],
+    ["LIGHT SCREEN", "Psychic"],
+    ["HAZE", "Ice"],
+    ["REFLECT", "Psychic"],
+    ["FOCUS ENERGY", "Normal"],
+    ["BIDE", "Normal"],
+    ["METRONOME", "Normal"],
+    ["MIRROR MOVE", "Flying"],
+    ["SELFDESTRUCT", "Normal"],
+    ["EGG BOMB", "Normal"],
+    ["LICK", "Ghost"],
+    ["SMOG", "Poison"],
+    ["SLUDGE", "Poison"],
+    ["BONE CLUB", "Ground"],
+    ["FIRE BLAST", "Fire"],
+    ["WATERFALL", "Water"],
+    ["CLAMP", "Water"],
+    ["SWIFT", "Normal"],
+    ["SKULL BASH", "Normal"],
+    ["SPIKE CANNON", "Normal"],
+    ["CONSTRICT", "Normal"],
+    ["AMNESIA", "Psychic"],
+    ["KINESIS", "Psychic"],
+    ["SOFTBOILED", "Normal"],
+    ["HI JUMP KICK", "Fighting"],
+    ["GLARE", "Normal"],
+    ["DREAM EATER", "Psychic"],
+    ["POISON GAS", "Poison"],
+    ["BARRAGE", "Normal"],
+    ["LEECH LIFE", "Bug"],
+    ["LOVELY KISS", "Normal"],
+    ["SKY ATTACK", "Flying"],
+    ["TRANSFORM", "Normal"],
+    ["BUBBLE", "Water"],
+    ["DIZZY PUNCH", "Normal"],
+    ["SPORE", "Grass"],
+    ["FLASH", "Normal"],
+    ["PSYWAVE", "Psychic"],
+    ["SPLASH", "Normal"],
+    ["ACID ARMOR", "Poison"],
+    ["CRABHAMMER", "Water"],
+    ["EXPLOSION", "Normal"],
+    ["FURY SWIPES", "Normal"],
+    ["BONEMERANG", "Ground"],
+    ["REST", "Psychic"],
+    ["ROCK SLIDE", "Rock"],
+    ["HYPER FANG", "Normal"],
+    ["SHARPEN", "Normal"],
+    ["CONVERSION", "Normal"],
+    ["TRI ATTACK", "Normal"],
+    ["SUPER FANG", "Normal"],
+    ["SLASH", "Normal"],
+    ["SUBSTITUTE", "Normal"],
+    ["STRUGGLE", "Normal"],
+    ["SKETCH", "Normal"],
+    ["TRIPLE KICK", "Fighting"],
+    ["THIEF", "Dark"],
+    ["SPIDER WEB", "Bug"],
+    ["MIND READER", "Normal"],
+    ["NIGHTMARE", "Ghost"],
+    ["FLAME WHEEL", "Fire"],
+    ["SNORE", "Normal"],
+    ["CURSE", "Curse"],
+    ["FLAIL", "Normal"],
+    ["CONVERSION2", "Normal"],
+    ["AEROBLAST", "Flying"],
+    ["COTTON SPORE", "Grass"],
+    ["REVERSAL", "Fighting"],
+    ["SPITE", "Ghost"],
+    ["POWDER SNOW", "Ice"],
+    ["PROTECT", "Normal"],
+    ["MACH PUNCH", "Fighting"],
+    ["SCARY FACE", "Normal"],
+    ["FAINT ATTACK", "Dark"],
+    ["SWEET KISS", "Normal"],
+    ["BELLY DRUM", "Normal"],
+    ["SLUDGE BOMB", "Poison"],
+    ["MUD-SLAP", "Ground"],
+    ["OCTAZOOKA", "Water"],
+    ["SPIKES", "Ground"],
+    ["ZAP CANNON", "Electric"],
+    ["FORESIGHT", "Normal"],
+    ["DESTINY BOND", "Ghost"],
+    ["PERISH SONG", "Normal"],
+    ["ICY WIND", "Ice"],
+    ["DETECT", "Fighting"],
+    ["BONE RUSH", "Ground"],
+    ["LOCK ON", "Normal"],
+    ["OUTRAGE", "Dragon"],
+    ["SANDSTORM", "Rock"],
+    ["GIGA DRAIN", "Grass"],
+    ["ENDURE", "Normal"],
+    ["CHARM", "Normal"],
+    ["ROLLOUT", "Rock"],
+    ["FALSE SWIPE", "Normal"],
+    ["SWAGGER", "Normal"],
+    ["MILK DRINK", "Normal"],
+    ["SPARK", "Electric"],
+    ["FURY CUTTER", "Bug"],
+    ["STEEL WING", "Steel"],
+    ["MEAN LOOK", "Normal"],
+    ["ATTRACT", "Normal"],
+    ["SLEEP TALK", "Normal"],
+    ["HEAL BELL", "Normal"],
+    ["RETURN", "Normal"],
+    ["PRESENT", "Normal"],
+    ["FRUSTRATION", "Normal"],
+    ["SAFEGUARD", "Normal"],
+    ["PAIN SPLIT", "Normal"],
+    ["SACRED FIRE", "Fire"],
+    ["MAGNITUDE", "Ground"],
+    ["DYNAMICPUNCH", "Fighting"],
+    ["MEGAHORN", "Bug"],
+    ["DRAGONBREATH", "Dragon"],
+    ["BATON PASS", "Normal"],
+    ["ENCORE", "Normal"],
+    ["PURSUIT", "Dark"],
+    ["RAPID SPIN", "Normal"],
+    ["SWEET SCENT", "Normal"],
+    ["IRON TAIL", "Steel"],
+    ["METAL CLAW", "Steel"],
+    ["VITAL THROW", "Fighting"],
+    ["MORNING SUN", "Normal"],
+    ["SYNTHESIS", "Grass"],
+    ["MOONLIGHT", "Normal"],
+    ["HIDDEN POWER", "Normal"],
+    ["CROSS CHOP", "Fighting"],
+    ["TWISTER", "Dragon"],
+    ["RAIN DANCE", "Water"],
+    ["SUNNY DAY", "Fire"],
+    ["CRUNCH", "Dark"],
+    ["MIRROR COAT", "Psychic"],
+    ["PSYCH UP", "Normal"],
+    ["EXTREMESPEED", "Normal"],
+    ["ANCIENTPOWER", "Rock"],
+    ["SHADOW BALL", "Ghost"],
+    ["FUTURE SIGHT", "Psychic"],
+    ["ROCK SMASH", "Fighting"],
+    ["WHIRLPOOL", "Water"],
+    ["BEAT UP", "Dark"],
+]
+const allPokemon = [
+    ["None", "Ghost", "Dark"], // probably some glitch type
+    ["Bulbasaur", "Grass", "Poison"],
+    ["Ivysaur", "Grass", "Poison"],
+    ["Venusaur", "Grass", "Poison"],
+    ["Charmander", "Fire"],
+    ["Charmeleon", "Fire"],
+    ["Charizard", "Fire", "Flying"],
+    ["Squirtle", "Water"],
+    ["Wartortle", "Water"],
+    ["Blastoise", "Water"],
+    ["Caterpie", "Bug"],
+    ["Metapod", "Bug"],
+    ["Butterfree", "Bug", "Flying"],
+    ["Weedle", "Bug", "Poison"],
+    ["Kakuna", "Bug", "Poison"],
+    ["Beedrill", "Bug", "Poison"],
+    ["Pidgey", "Normal", "Flying"],
+    ["Pidgeotto", "Normal", "Flying"],
+    ["Pidgeot", "Normal", "Flying"],
+    ["Rattata", "Normal"],
+    ["Raticate", "Normal"],
+    ["Spearow", "Normal", "Flying"],
+    ["Fearow", "Normal", "Flying"],
+    ["Ekans", "Poison"],
+    ["Arbok", "Poison"],
+    ["Pikachu", "Electric"],
+    ["Raichu", "Electric"],
+    ["Sandshrew", "Ground"],
+    ["Sandslash", "Ground"],
+    ["Nidoran♀", "Poison"],
+    ["Nidorina", "Poison"],
+    ["Nidoqueen", "Poison", "Ground"],
+    ["Nidoran♂", "Poison"],
+    ["Nidorino", "Poison"],
+    ["Nidoking", "Poison", "Ground"],
+    ["Clefairy", "Normal"],
+    ["Clefable", "Normal"],
+    ["Vulpix", "Fire"],
+    ["Ninetales", "Fire"],
+    ["Jigglypuff", "Normal"],
+    ["Wigglytuff", "Normal"],
+    ["Zubat", "Poison", "Flying"],
+    ["Golbat", "Poison", "Flying"],
+    ["Oddish", "Grass", "Poison"],
+    ["Gloom", "Grass", "Poison"],
+    ["Vileplume", "Grass", "Poison"],
+    ["Paras", "Bug", "Grass"],
+    ["Parasect", "Bug", "Grass"],
+    ["Venonat", "Bug", "Poison"],
+    ["Venomoth", "Bug", "Poison"],
+    ["Diglett", "Ground"],
+    ["Dugtrio", "Ground"],
+    ["Meowth", "Normal"],
+    ["Persian", "Normal"],
+    ["Psyduck", "Water"],
+    ["Golduck", "Water"],
+    ["Mankey", "Fighting"],
+    ["Primeape", "Fighting"],
+    ["Growlithe", "Fire"],
+    ["Arcanine", "Fire"],
+    ["Poliwag", "Water"],
+    ["Poliwhirl", "Water"],
+    ["Poliwrath", "Water", "Fighting"],
+    ["Abra", "Psychic"],
+    ["Kadabra", "Psychic"],
+    ["Alakazam", "Psychic"],
+    ["Machop", "Fighting"],
+    ["Machoke", "Fighting"],
+    ["Machamp", "Fighting"],
+    ["Bellsprout", "Grass", "Poison"],
+    ["Weepinbell", "Grass", "Poison"],
+    ["Victreebel", "Grass", "Poison"],
+    ["Tentacool", "Water", "Poison"],
+    ["Tentacruel", "Water", "Poison"],
+    ["Geodude", "Rock", "Ground"],
+    ["Graveler", "Rock", "Ground"],
+    ["Golem", "Rock", "Ground"],
+    ["Ponyta", "Fire"],
+    ["Rapidash", "Fire"],
+    ["Slowpoke", "Water", "Psychic"],
+    ["Slowbro", "Water", "Psychic"],
+    ["Magnemite", "Electric", "Steel"],
+    ["Magneton", "Electric", "Steel"],
+    ["Farfetch'd", "Normal", "Flying"],
+    ["Doduo", "Normal", "Flying"],
+    ["Dodrio", "Normal", "Flying"],
+    ["Seel", "Water"],
+    ["Dewgong", "Water", "Ice"],
+    ["Grimer", "Poison"],
+    ["Muk", "Poison"],
+    ["Shellder", "Water"],
+    ["Cloyster", "Water", "Ice"],
+    ["Gastly", "Ghost", "Poison"],
+    ["Haunter", "Ghost", "Poison"],
+    ["Gengar", "Ghost", "Poison"],
+    ["Onix", "Rock", "Ground"],
+    ["Drowzee", "Psychic"],
+    ["Hypno", "Psychic"],
+    ["Krabby", "Water"],
+    ["Kingler", "Water"],
+    ["Voltorb", "Electric"],
+    ["Electrode", "Electric"],
+    ["Exeggcute", "Grass", "Psychic"],
+    ["Exeggutor", "Grass", "Psychic"],
+    ["Cubone", "Ground"],
+    ["Marowak", "Ground"],
+    ["Hitmonlee", "Fighting"],
+    ["Hitmonchan", "Fighting"],
+    ["Lickitung", "Normal"],
+    ["Koffing", "Poison"],
+    ["Weezing", "Poison"],
+    ["Rhyhorn", "Ground", "Rock"],
+    ["Rhydon", "Ground", "Rock"],
+    ["Chansey", "Normal"],
+    ["Tangela", "Grass"],
+    ["Kangaskhan", "Normal"],
+    ["Horsea", "Water"],
+    ["Seadra", "Water"],
+    ["Goldeen", "Water"],
+    ["Seaking", "Water"],
+    ["Staryu", "Water"],
+    ["Starmie", "Water", "Psychic"],
+    ["Mr. Mime", "Psychic"],
+    ["Scyther", "Bug", "Flying"],
+    ["Jynx", "Ice", "Psychic"],
+    ["Electabuzz", "Electric"],
+    ["Magmar", "Fire"],
+    ["Pinsir", "Bug"],
+    ["Tauros", "Normal"],
+    ["Magikarp", "Water"],
+    ["Gyarados", "Water", "Flying"],
+    ["Lapras", "Water", "Ice"],
+    ["Ditto", "Normal"],
+    ["Eevee", "Normal"],
+    ["Vaporeon", "Water"],
+    ["Jolteon", "Electric"],
+    ["Flareon", "Fire"],
+    ["Porygon", "Normal"],
+    ["Omanyte", "Rock", "Water"],
+    ["Omastar", "Rock", "Water"],
+    ["Kabuto", "Rock", "Water"],
+    ["Kabutops", "Rock", "Water"],
+    ["Aerodactyl", "Rock", "Flying"],
+    ["Snorlax", "Normal"],
+    ["Articuno", "Ice", "Flying"],
+    ["Zapdos", "Electric", "Flying"],
+    ["Moltres", "Fire", "Flying"],
+    ["Dratini", "Dragon"],
+    ["Dragonair", "Dragon"],
+    ["Dragonite", "Dragon", "Flying"],
+    ["Mewtwo", "Psychic"],
+    ["Mew", "Psychic"],
+    ["Chikorita", "Grass"],
+    ["Bayleef", "Grass"],
+    ["Meganium", "Grass"],
+    ["Cyndaquil", "Fire"],
+    ["Quilava", "Fire"],
+    ["Typhlosion", "Fire"],
+    ["Totodile", "Water"],
+    ["Croconaw", "Water"],
+    ["Feraligatr", "Water"],
+    ["Sentret", "Normal"],
+    ["Furret", "Normal"],
+    ["Hoothoot", "Normal", "Flying"],
+    ["Noctowl", "Normal", "Flying"],
+    ["Ledyba", "Bug", "Flying"],
+    ["Ledian", "Bug", "Flying"],
+    ["Spinarak", "Bug", "Poison"],
+    ["Ariados", "Bug", "Poison"],
+    ["Crobat", "Poison", "Flying"],
+    ["Chinchou", "Water", "Electric"],
+    ["Lanturn", "Water", "Electric"],
+    ["Pichu", "Electric"],
+    ["Cleffa", "Normal"],
+    ["Igglybuff", "Normal"],
+    ["Togepi", "Normal"],
+    ["Togetic", "Normal", "Flying"],
+    ["Natu", "Psychic", "Flying"],
+    ["Xatu", "Psychic", "Flying"],
+    ["Mareep", "Electric"],
+    ["Flaaffy", "Electric"],
+    ["Ampharos", "Electric"],
+    ["Bellossom", "Grass"],
+    ["Marill", "Water"],
+    ["Azumarill", "Water"],
+    ["Sudowoodo", "Rock"],
+    ["Politoed", "Water"],
+    ["Hoppip", "Grass", "Flying"],
+    ["Skiploom", "Grass", "Flying"],
+    ["Jumpluff", "Grass", "Flying"],
+    ["Aipom", "Normal"],
+    ["Sunkern", "Grass"],
+    ["Sunflora", "Grass"],
+    ["Yanma", "Bug", "Flying"],
+    ["Wooper", "Water", "Ground"],
+    ["Quagsire", "Water", "Ground"],
+    ["Espeon", "Psychic"],
+    ["Umbreon", "Dark"],
+    ["Murkrow", "Dark", "Flying"],
+    ["Slowking", "Water", "Psychic"],
+    ["Misdreavus", "Ghost"],
+    ["Unown", "Psychic"],
+    ["Wobbuffet", "Psychic"],
+    ["Girafarig", "Normal", "Psychic"],
+    ["Pineco", "Bug"],
+    ["Forretress", "Bug", "Steel"],
+    ["Dunsparce", "Normal"],
+    ["Gligar", "Ground", "Flying"],
+    ["Steelix", "Steel", "Ground"],
+    ["Snubbull", "Normal"],
+    ["Granbull", "Normal"],
+    ["Qwilfish", "Water", "Poison"],
+    ["Scizor", "Bug", "Steel"],
+    ["Shuckle", "Bug", "Rock"],
+    ["Heracross", "Bug", "Fighting"],
+    ["Sneasel", "Dark", "Ice"],
+    ["Teddiursa", "Normal"],
+    ["Ursaring", "Normal"],
+    ["Slugma", "Fire"],
+    ["Magcargo", "Fire", "Rock"],
+    ["Swinub", "Ice", "Ground"],
+    ["Piloswine", "Ice", "Ground"],
+    ["Corsola", "Water", "Rock"],
+    ["Remoraid", "Water"],
+    ["Octillery", "Water"],
+    ["Delibird", "Ice", "Flying"],
+    ["Mantine", "Water", "Flying"],
+    ["Skarmory", "Steel", "Flying"],
+    ["Houndour", "Dark", "Fire"],
+    ["Houndoom", "Dark", "Fire"],
+    ["Kingdra", "Water", "Dragon"],
+    ["Phanpy", "Ground"],
+    ["Donphan", "Ground"],
+    ["Porygon2", "Normal"],
+    ["Stantler", "Normal"],
+    ["Smeargle", "Normal"],
+    ["Tyrogue", "Fighting"],
+    ["Hitmontop", "Fighting"],
+    ["Smoochum", "Ice", "Psychic"],
+    ["Elekid", "Electric"],
+    ["Magby", "Fire"],
+    ["Miltank", "Normal"],
+    ["Blissey", "Normal"],
+    ["Raikou", "Electric"],
+    ["Entei", "Fire"],
+    ["Suicune", "Water"],
+    ["Larvitar", "Rock", "Ground"],
+    ["Pupitar", "Rock", "Ground"],
+    ["Tyranitar", "Rock", "Dark"],
+    ["Lugia", "Psychic", "Flying"],
+    ["Ho-Oh", "Fire", "Flying"],
+    ["Celebi", "Psychic", "Grass"],
+]
+const allResistedTypeMatchups = [
+    ["Normal", "Rock"],
+    ["Normal", "Steel"],
+    ["Fire", "Fire"],
+    ["Fire", "Water"],
+    ["Fire", "Rock"],
+    ["Fire", "Dragon"],
+    ["Water", "Water"],
+    ["Water", "Grass"],
+    ["Water", "Dragon"],
+    ["Electric", "Electric"],
+    ["Electric", "Grass"],
+    ["Electric", "Ground"],
+    ["Electric", "Dragon"],
+    ["Grass", "Fire"],
+    ["Grass", "Grass"],
+    ["Grass", "Poison"],
+    ["Grass", "Flying"],
+    ["Grass", "Bug"],
+    ["Grass", "Dragon"],
+    ["Grass", "Steel"],
+    ["Ice", "Water"],
+    ["Ice", "Ice"],
+    ["Ice", "Steel"],
+    ["Fighting", "Poison"],
+    ["Fighting", "Flying"],
+    ["Fighting", "Psychic"],
+    ["Fighting", "Bug"],
+    ["Poison", "Poison"],
+    ["Poison", "Ground"],
+    ["Poison", "Rock"],
+    ["Poison", "Ghost"],
+    ["Poison", "Steel"],
+    ["Ground", "Grass"],
+    ["Ground", "Flying"],
+    ["Ground", "Bug"],
+    ["Flying", "Electric"],
+    ["Flying", "Rock"],
+    ["Flying", "Steel"],
+    ["Psychic", "Psychic"],
+    ["Psychic", "Dark"],
+    ["Psychic", "Steel"],
+    ["Bug", "Fire"],
+    ["Bug", "Fighting"],
+    ["Bug", "Flying"],
+    ["Bug", "Ghost"],
+    ["Bug", "Steel"],
+    ["Rock", "Fighting"],
+    ["Rock", "Ground"],
+    ["Rock", "Steel"],
+    ["Ghost", "Normal"],
+    ["Ghost", "Dark"],
+    ["Ghost", "Steel"],
+    ["Dragon", "Steel"],
+    ["Dark", "Fighting"],
+    ["Dark", "Dark"],
+    ["Dark", "Steel"],
+    ["Steel", "Fire"],
+    ["Steel", "Water"],
+    ["Steel", "Electric"],
+    ["Steel", "Steel"],
+    ["Bug", "Poison"],
+    ["Ice", "Fire"],
+    ["Ghost", "Psychic"],
+]
+const allSuperEffectiveTypeMatchups = [
+    ["Fire", "Grass"],
+    ["Fire", "Ice"],
+    ["Fire", "Bug"],
+    ["Fire", "Steel"],
+    ["Water", "Fire"],
+    ["Water", "Ground"],
+    ["Water", "Rock"],
+    ["Electric", "Water"],
+    ["Electric", "Flying"],
+    ["Grass", "Water"],
+    ["Grass", "Ground"],
+    ["Grass", "Rock"],
+    ["Ice", "Grass"],
+    ["Ice", "Ground"],
+    ["Ice", "Flying"],
+    ["Ice", "Dragon"],
+    ["Fighting", "Normal"],
+    ["Fighting", "Ice"],
+    ["Fighting", "Rock"],
+    ["Fighting", "Dark"],
+    ["Fighting", "Steel"],
+    ["Poison", "Grass"],
+    ["Ground", "Fire"],
+    ["Ground", "Electric"],
+    ["Ground", "Poison"],
+    ["Ground", "Rock"],
+    ["Ground", "Steel"],
+    ["Flying", "Grass"],
+    ["Flying", "Fighting"],
+    ["Flying", "Bug"],
+    ["Psychic", "Fighting"],
+    ["Psychic", "Poison"],
+    ["Bug", "Grass"],
+    ["Bug", "Psychic"],
+    ["Bug", "Dark"],
+    ["Rock", "Fire"],
+    ["Rock", "Ice"],
+    ["Rock", "Flying"],
+    ["Rock", "Bug"],
+    ["Ghost", "Ghost"],
+    ["Dragon", "Dragon"],
+    ["Dark", "Psychic"],
+    ["Dark", "Ghost"],
+    ["Steel", "Ice"],
+    ["Steel", "Rock"],
+    ["Ghost", "Psychic"],
+]
+function setup() {
+    let pokemon = ""
+    for(const index in allPokemon) {
+        pokemon += `<option value=${index}>${allPokemon[index][0]}</option>`
+    }
+    let moves = ""
+    for(const index in allMoves) {
+        moves += `<option value=${index}>${allMoves[index][0]} (${allMoves[index][1]})</option>`
+    }
+    let types = ""
+    for(const type of allTypes) {
+        types += `<option value=${type}>${type}</option>`
+    }
+    for(const sthing of document.querySelectorAll('[id^="species-"]')) {
+        sthing.innerHTML = pokemon
+    }
+    for(const sthing of document.querySelectorAll('[id^="move-"]')) {
+        sthing.innerHTML = moves
+    }
+    for(const sthing of document.querySelectorAll('[id^="type-"]')) {
+        sthing.innerHTML = types
+    }
+
+    function lookupPokemon(what) {
+        return allPokemon.findIndex(item => item[0] === what)
+    }
+    function lookupMove(what) {
+        return allMoves.findIndex(item => item[0] === what)
+    }
+
+    // TODO: make a table that stores all of this; maybe of all boss trainers?
+    document.getElementById(`species-opponent-2`).value = lookupPokemon("Espeon")
+    document.getElementById(`species-opponent-3`).value = lookupPokemon("Snorlax")
+    document.getElementById(`species-opponent-4`).value = lookupPokemon("Venusaur")
+    document.getElementById(`species-opponent-5`).value = lookupPokemon("Charizard")
+    document.getElementById(`species-opponent-6`).value = lookupPokemon("Blastoise")
+    document.getElementById(`move-opponent-2-1`).value = lookupMove("MUD-SLAP")
+    document.getElementById(`move-opponent-2-2`).value = lookupMove("REFLECT")
+    document.getElementById(`move-opponent-2-3`).value = lookupMove("SWIFT")
+    document.getElementById(`move-opponent-2-4`).value = lookupMove("PSYCHIC")
+    document.getElementById(`move-opponent-3-1`).value = lookupMove("AMNESIA")
+    document.getElementById(`move-opponent-3-2`).value = lookupMove("SNORE")
+    document.getElementById(`move-opponent-3-3`).value = lookupMove("REST")
+    document.getElementById(`move-opponent-3-4`).value = lookupMove("BODY SLAM")
+    document.getElementById(`move-opponent-4-1`).value = lookupMove("SUNNY DAY")
+    document.getElementById(`move-opponent-4-2`).value = lookupMove("GIGA DRAIN")
+    document.getElementById(`move-opponent-4-3`).value = lookupMove("SYNTHESIS")
+    document.getElementById(`move-opponent-4-4`).value = lookupMove("SOLARBEAM")
+    document.getElementById(`move-opponent-5-1`).value = lookupMove("FLAMETHROWER")
+    document.getElementById(`move-opponent-5-2`).value = lookupMove("WING ATTACK")
+    document.getElementById(`move-opponent-5-3`).value = lookupMove("SLASH")
+    document.getElementById(`move-opponent-5-4`).value = lookupMove("FIRE SPIN")
+    document.getElementById(`move-opponent-6-1`).value = lookupMove("RAIN DANCE")
+    document.getElementById(`move-opponent-6-2`).value = lookupMove("SURF")
+    document.getElementById(`move-opponent-6-3`).value = lookupMove("BLIZZARD")
+    document.getElementById(`move-opponent-6-4`).value = lookupMove("WHIRLPOOL")
+}
+function isSuperEffective(moveType, pokemonType1, pokemonType2 = undefined) {
+    if(moveType == null || pokemonType1 == null) {
+        return false
+    }
+    if(hasMatchup(allResistedTypeMatchups, moveType, pokemonType1) || hasMatchup(allResistedTypeMatchups, moveType, pokemonType2)) {
+        return false
+    }
+    return hasMatchup(allSuperEffectiveTypeMatchups, moveType, pokemonType1) || hasMatchup(allSuperEffectiveTypeMatchups, moveType, pokemonType2)
+}
+function hasMatchup(matchups, moveType, targetType) {
+    for(const c of matchups) {
+        if(c[0] === moveType && c[1] === targetType) {
+            return true
+        }
+    }
+    return false
+}
+const NUMBER_OF_POKEMON = 5
+function doUpdate() {
+    const errors = checkErrors()
+    if(errors != null) {
+        document.getElementById("order").innerHTML = `<p class="error">${errors}</p>`
+        return
+    }
+    try {
+        document.getElementById("order").innerHTML = ""
+
+        // Let's count the Pokemon!
+        const scores = [-2, -2, -2, -2, -2]
+        const playerTypePrimary = document.getElementById("type-player-1").value
+        const playerTypeSecondary = document.getElementById("type-player-2").value
+        
+        let totalPokemonCount = 0
+        let randomPokemonCount = 0
+        for(let i = 0; i < NUMBER_OF_POKEMON; i++) {
+            const species = document.getElementById(`species-opponent-${i+2}`).value
+            if(species === "0") {
+                break
+            }
+
+            totalPokemonCount += 1
+            scores[i] = 0
+            
+            // Offensive check! Is the player weak?
+            const move1Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-1`).value)][1]
+            const move2Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-2`).value)][1]
+            const move3Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-3`).value)][1]
+            const move4Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-4`).value)][1]
+            if(isSuperEffective(move1Type, playerTypePrimary, playerTypeSecondary)
+            || isSuperEffective(move2Type, playerTypePrimary, playerTypeSecondary)
+            || isSuperEffective(move3Type, playerTypePrimary, playerTypeSecondary)
+            || isSuperEffective(move4Type, playerTypePrimary, playerTypeSecondary)) {
+                scores[i]++
+            }
+
+            // Defensive check! Is the player strong?
+            const aiTypePrimary = allPokemon[parseInt(species)][1]
+            const aiTypeSecondary = allPokemon[parseInt(species)][2]
+            if(isSuperEffective(playerTypePrimary, aiTypePrimary, aiTypeSecondary) || isSuperEffective(playerTypeSecondary, aiTypePrimary, aiTypeSecondary)) {
+                console.log("Whoa, what?")
+                scores[i]--
+            }
+            if(scores[i] === -1) {
+                randomPokemonCount += 1
+            }
+        }
+        console.log(scores)
+
+        const fixedOrder = []
+        const randomOrder = []
+
+        function pushOrder(to, of) {
+            for(let i = 0; i < totalPokemonCount; i++) {
+                if(scores[i] === of) {
+                    to.push(i)
+                }
+            }
+        }
+
+        pushOrder(fixedOrder, 1)
+        pushOrder(fixedOrder, 0)
+
+        // effectively, it is not random order if there is only one -1
+        pushOrder(randomPokemonCount === 1 ? fixedOrder : randomOrder, -1)
+
+        // Is it in order?
+        let inOrder = false
+        if(randomOrder.length === 0) {
+            inOrder = true
+            for(let i = 0; i < totalPokemonCount; i++) {
+                if(fixedOrder[i] !== i) {
+                    inOrder = false
+                    break;
+                }
+            }
+        }
+
+        if(inOrder) {
+            document.getElementById("order").innerHTML += "<p>The AI will send out all Pokémon in <i>party</i> order:</p>"
+        }
+        else if(fixedOrder.length === 0) {
+            document.getElementById("order").innerHTML = "<p>The AI will send out all Pokémon in <i>random</i> order:</p>"
+        }
+        else if(randomOrder.length < 2) {
+            document.getElementById("order").innerHTML += "<p>The AI will send out these Pokémon in <i>this</i> order:</p>"
+        }
+        else {
+            document.getElementById("order").innerHTML += "<p>The AI will <i>first</i> send out these Pokémon in <i>this</i> order:</p>"
+        }
+
+        function formatOrderText(arr) {
+            let inOrderText = ""
+            for(const c in arr) {
+                const i = arr[c] + 2
+                const speciesIndex = parseInt(document.getElementById(`species-opponent-${i}`).value)
+                const speciesName = allPokemon[speciesIndex][0]
+                const formattedName = `${speciesName} (slot #${i}; priority ${scores[arr[c]]})`
+                inOrderText += `<li>${formattedName}</li>`
+            }
+            return inOrderText
+        }
+
+        document.getElementById("order").innerHTML += `<ol>${formatOrderText(fixedOrder)}</ol>`
+        if(randomOrder.length > 0) {
+            if(fixedOrder.length !== 0) {
+                document.getElementById("order").innerHTML += "<p>After that, these Pokémon will be randomly sent out:</p>"
+            }
+            document.getElementById("order").innerHTML += `<ul>${formatOrderText(randomOrder)}</ul>`
+        }
+    }
+    catch(e) {
+        document.getElementById("order").innerHTML = "<p class='fatalerror'>Got an error! Check the console and report this (with a screenshot of your input) :(</p>"
+        throw e
+    }
+}
+function checkErrors() {
+    let totalPokemon = 0
+    for(let i = 0; i < NUMBER_OF_POKEMON; i++) {
+        const species = document.getElementById(`species-opponent-${i+2}`).value
+        if(species === "0") {
+            if(totalPokemon === 0) {
+                return `AI Pokémon #${i+2} cannot be empty.`
+            }
+            continue
+        }
+        if(totalPokemon !== i) {
+            return `AI Pokémon #${i+2} is set, but another Pokémon before this one is not set.`
+        }
+        let hasMoves = false
+        for(const c of document.querySelectorAll(`[id^="move-opponent-${i+2}"]`)) {
+            if(c.value !== "0") {
+                hasMoves = true
+                break
+            }
+        }
+        if(!hasMoves) {
+            return `AI Pokémon #${i+2} has no moves.`
+        }
+        totalPokemon += 1
+    }
+    if(document.getElementById("type-player-1").value === "None") {
+        return "No primary typing for the player set."
+    }
+}
+function doUpdateTyping() {
+    const playerSpecies = document.getElementById("species-player").value
+    const playerTypePrimary = allPokemon[parseInt(playerSpecies)][1]
+    const playerTypeSecondary = allPokemon[parseInt(playerSpecies)][2] ?? "None"
+    document.getElementById("type-player-1").value = playerTypePrimary
+    document.getElementById("type-player-2").value = playerTypeSecondary
+    return doUpdate()
+}
+function doUpdateSpecies() {
+    document.getElementById("species-player").value = "0"
+    return doUpdate()
+}
+</script>
+</head>
+<body>
+<div style="margin: auto; max-width: 880px">
+<noscript>NOTE: You need JavaScript to use this page! (NOTE: All JS on this page is free, and no external JS is embedded in this page)</noscript>
+<h1>What Pokémon will Red use?</h1>
+<p><label for="species-player">Your Pokémon Species:</label> <select onchange="doUpdateTyping()" name="species-player" id="species-player"></select></p>
+<p>Your Pokémon Type: <select onchange="doUpdateSpecies()" name="type-player-1" id="type-player-1"></select> / <select onchange="doUpdateSpecies()" name="type-player-2" id="type-player-2"></select></p>
+<br />
+<p>AI's Pokémon (starting from the second slot)</p>
+<table>
+    <tr><th>Slot</th><th>Species</th><th>Move 1</th><th>Move 2</th><th>Move 3</th><th>Move 4</th></tr>
+    <tr>
+        <td><p>2</p></td>
+        <td><select onchange="doUpdate()" name="species-opponent-2" id="species-opponent-2"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-2-1" id="move-opponent-2-1"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-2-2" id="move-opponent-2-2"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-2-3" id="move-opponent-2-3"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-2-4" id="move-opponent-2-4"></select></td>
+    </tr>
+    <tr>
+        <td><p>3</p></td>
+        <td><select onchange="doUpdate()" name="species-opponent-3" id="species-opponent-3"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-3-1" id="move-opponent-3-1"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-3-2" id="move-opponent-3-2"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-3-3" id="move-opponent-3-3"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-3-4" id="move-opponent-3-4"></select></td>
+    </tr>
+    <tr>
+        <td><p>4</p></td>
+        <td><select onchange="doUpdate()" name="species-opponent-4" id="species-opponent-4"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-4-1" id="move-opponent-4-1"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-4-2" id="move-opponent-4-2"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-4-3" id="move-opponent-4-3"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-4-4" id="move-opponent-4-4"></select></td>
+    </tr>
+    <tr>
+        <td><p>5</p></td>
+        <td><select onchange="doUpdate()" name="species-opponent-5" id="species-opponent-5"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-5-1" id="move-opponent-5-1"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-5-2" id="move-opponent-5-2"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-5-3" id="move-opponent-5-3"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-5-4" id="move-opponent-5-4"></select></td>
+    </tr>
+    <tr>
+        <td><p>6</p></td>
+        <td><select onchange="doUpdate()" name="species-opponent-6" id="species-opponent-6"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-6-1" id="move-opponent-6-1"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-6-2" id="move-opponent-6-2"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-6-3" id="move-opponent-6-3"></select></td>
+        <td><select onchange="doUpdate()" name="move-opponent-6-4" id="move-opponent-6-4"></select></td>
+    </tr>
+</table>
+<div id="order">
+    <p>...</p>
+</div>
+<p>The order in which Pokémon are sent out in Gen 2 follows a very simple pattern:</p>
+<ol>
+    <li>Give every Pokémon on the AI's team a score of 0.</li>
+    <li>For every Pokémon that is weak to your Pokémon's primary or secondary type, subtract 1.</li>
+    <li>For every Pokémon that has a move with a supereffective type (Psybeam and Amnesia are treated the same), add 1.</li>
+    <li>Go in team order and find the first Pokémon that has +1.</li>
+    <li>No +1? Go in team order and find the first Pokémon that has +0.</li>
+    <li>No +0? Choose a random Pokémon.</li>
+</ol>
+<script>setup()</script>
+<footer><p>This tool was made by Snowy! Enjoy!</p></footer>
+</body>
+</div>
+</html>

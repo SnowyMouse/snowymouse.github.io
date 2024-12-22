@@ -96,7 +96,7 @@ td p {
     line-height: 1;
 }
 td {
-    vertical-align: bottom;
+    vertical-align: center;
 }
 
 </style>
@@ -985,9 +985,6 @@ function doUpdateSpecies() {
 <div style="margin: auto; max-width: 880px">
 <noscript>NOTE: You need JavaScript to use this page! (NOTE: All JS on this page is free, and no external JS is embedded in this page)</noscript>
 <h1>What Pokémon will Red use?</h1>
-<p><label for="species-player">Your Pokémon Species:</label> <select onchange="doUpdateTyping()" name="species-player" id="species-player"></select></p>
-<p>Your Pokémon Type: <select onchange="doUpdateSpecies()" name="type-player-1" id="type-player-1"></select> / <select onchange="doUpdateSpecies()" name="type-player-2" id="type-player-2"></select></p>
-<br />
 <p>AI's Pokémon (starting from the second slot)</p>
 <table>
     <tr><th>Slot</th><th>Species</th><th>Move 1</th><th>Move 2</th><th>Move 3</th><th>Move 4</th></tr>
@@ -1032,6 +1029,9 @@ function doUpdateSpecies() {
         <td><select onchange="doUpdate()" name="move-opponent-6-4" id="move-opponent-6-4"></select></td>
     </tr>
 </table>
+<br />
+<p>Your Pokémon Type: <select onchange="doUpdateSpecies()" name="type-player-1" id="type-player-1"></select> / <select onchange="doUpdateSpecies()" name="type-player-2" id="type-player-2"></select>&nbsp;&nbsp;<label for="species-player">... or select a species here:</label> <select onchange="doUpdateTyping()" name="species-player" id="species-player"></select></p>
+<br />
 <div id="order">
     <p>...</p>
 </div>

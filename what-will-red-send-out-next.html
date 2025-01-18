@@ -696,7 +696,6 @@ const allResistedTypeMatchups = [
     ["Steel", "Steel"],
     ["Bug", "Poison"],
     ["Ice", "Fire"],
-    ["Ghost", "Psychic"],
 ]
 const allSuperEffectiveTypeMatchups = [
     ["Fire", "Grass"],
@@ -832,6 +831,7 @@ function doUpdate() {
 
         // Let's count the Pokemon!
         const scores = [-2, -2, -2, -2, -2]
+        const supereffectiveMoves = [null, null, null, null, null]
         const playerTypePrimary = document.getElementById("type-player-1").value
         const playerTypeSecondary = document.getElementById("type-player-2").value
         
@@ -847,14 +847,32 @@ function doUpdate() {
             scores[i] = 0
             
             // Offensive check! Is the player weak?
-            const move1Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-1`).value)][1]
-            const move2Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-2`).value)][1]
-            const move3Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-3`).value)][1]
-            const move4Type = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-4`).value)][1]
-            if(isSuperEffective(move1Type, playerTypePrimary, playerTypeSecondary)
-            || isSuperEffective(move2Type, playerTypePrimary, playerTypeSecondary)
-            || isSuperEffective(move3Type, playerTypePrimary, playerTypeSecondary)
-            || isSuperEffective(move4Type, playerTypePrimary, playerTypeSecondary)) {
+            const move1 = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-1`).value)]
+            const move2 = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-2`).value)]
+            const move3 = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-3`).value)]
+            const move4 = allMoves[parseInt(document.getElementById(`move-opponent-${i+2}-4`).value)]
+            const move1Type = move1[1]
+            const move2Type = move2[1]
+            const move3Type = move3[1]
+            const move4Type = move4[1]
+
+            let superEffectiveMove = null
+
+            if(isSuperEffective(move1Type, playerTypePrimary, playerTypeSecondary)) {
+                superEffectiveMove ||= move1
+            }
+            else if(isSuperEffective(move2Type, playerTypePrimary, playerTypeSecondary)) {
+                superEffectiveMove ||= move2
+            }
+            else if(isSuperEffective(move3Type, playerTypePrimary, playerTypeSecondary)) {
+                superEffectiveMove ||= move3
+            }
+            else if(isSuperEffective(move4Type, playerTypePrimary, playerTypeSecondary)) {
+                superEffectiveMove ||= move4
+            }
+
+            if(superEffectiveMove) {
+                supereffectiveMoves[i] = superEffectiveMove
                 scores[i]++
             }
 
@@ -916,10 +934,11 @@ function doUpdate() {
         function formatOrderText(arr) {
             let inOrderText = ""
             for(const c in arr) {
-                const i = arr[c] + 2
-                const speciesIndex = parseInt(document.getElementById(`species-opponent-${i}`).value)
+                const i = arr[c]
+                const speciesIndex = parseInt(document.getElementById(`species-opponent-${i+2}`).value)
                 const speciesName = allPokemon[speciesIndex][0]
-                const formattedName = `${speciesName} (slot #${i}; priority ${scores[arr[c]]})`
+                const supereffectiveMoveText = supereffectiveMoves[i] ? `; supereffective move: ${supereffectiveMoves[i][0]}` : ""
+                const formattedName = `${speciesName} (slot #${i}; priority ${scores[arr[c]]}${supereffectiveMoveText})`
                 inOrderText += `<li>${formattedName}</li>`
             }
             return inOrderText

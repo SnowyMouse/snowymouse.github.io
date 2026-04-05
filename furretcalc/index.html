@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="style/style.css" />
+<title>FurretCalc</title>
+</head>
+<body>
+<header>
+<h1>FurretCalc</h1>
+<p>A WIP damage calculator for the second-generation Pokémon games</p>
+</header>
+
+<!-- Show a banner for the folks who disabled JS on their browser -->
+<noscript>
+    <p>This content requires running free JavaScript code in order to function.</p>
+    <p>You can also download the <a href="https://github.com/SnowyMouse/furretcalc">source code</a> if you would like to run it locally.</p>
+</noscript>
+
+<div id="calculator_content">
+
+<div id="player_pokemon" class="pokemon_input">
+<div class="pokemon_stats">
+<h2>Your Pokémon's Stats</h2>
+<div class="pokemon_stats_placeholder">Loading...</div>
+</div>
+
+<div id="badges_box_outer">
+<h2>Your Badges</h2>
+<div id="johto_badges" class="badge_box">
+<ul>
+<li><input type="checkbox" id="johto_badge_1" tabindex="100" /><label for="johto_badge_1">Falkner</label></li>
+<li><input type="checkbox" id="johto_badge_2" tabindex="100" /><label for="johto_badge_2">Bugsy</label></li>
+<li><input type="checkbox" id="johto_badge_3" tabindex="100" /><label for="johto_badge_3">Whitney</label></li>
+<li><input type="checkbox" id="johto_badge_4" tabindex="100" /><label for="johto_badge_4">Morty</label></li>
+<li><input type="checkbox" id="johto_badge_5" tabindex="100" /><label for="johto_badge_5">Chuck</label></li>
+<li><input type="checkbox" id="johto_badge_6" tabindex="100" /><label for="johto_badge_6">Jasmine</label></li>
+<li><input type="checkbox" id="johto_badge_7" tabindex="100" /><label for="johto_badge_7">Pryce</label></li>
+<li><input type="checkbox" id="johto_badge_8" tabindex="100" /><label for="johto_badge_8">Clair</label></li>
+</ul>
+</div>
+<div id="kanto_badges" class="badge_box">
+<ul>
+<li><input type="checkbox" id="kanto_badge_1" tabindex="100" /><label for="kanto_badge_1">Brock</label></li>
+<li><input type="checkbox" id="kanto_badge_2" tabindex="100" /><label for="kanto_badge_2">Misty</label></li>
+<li><input type="checkbox" id="kanto_badge_3" tabindex="100" /><label for="kanto_badge_3">Lt. Surge</label></li>
+<li><input type="checkbox" id="kanto_badge_4" tabindex="100" /><label for="kanto_badge_4">Erika</label></li>
+<li><input type="checkbox" id="kanto_badge_5" tabindex="100" /><label for="kanto_badge_5">Janine</label></li>
+<li><input type="checkbox" id="kanto_badge_6" tabindex="100" /><label for="kanto_badge_6">Sabrina</label></li>
+<li><input type="checkbox" id="kanto_badge_7" tabindex="100" /><label for="kanto_badge_7">Blaine</label></li>
+<li><input type="checkbox" id="kanto_badge_8" tabindex="100" /><label for="kanto_badge_8">Blue</label></li>
+</ul>
+</div>
+<div class="control_box">
+<ul>
+<li><button onclick="clear_all_badges()" tabindex="100">Clear all</button></li>
+<li><button onclick="select_johto_badges()" tabindex="100">Select Johto</button></li>
+<li><button onclick="select_all_badges()" tabindex="100">Select all</button></li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="calc_buffer">
+    <div class="calc_element">
+        <h2 class="you_label">Your Pokémon's Ranges</h2>
+        <div id="player_damage" class="damage_outer"></div>
+    </div>
+    <div class="calc_element">
+        <h2 class="opponent_label">Your Opponent's Ranges</h2>
+        <div id="enemy_damage" class="damage_outer"></div>
+    </div>
+    <div id="notes_buffer_outer" class="calc_element">
+        <h2>Notes</h2>
+        <div id="suggestions_and_notes_buffer">
+            <ul id="suggestions_and_notes_list">
+                <!-- <li>Headbutt has a 34.3% chance of preventing your opponent from moving (either from a crit or flinch) which is greater than Return's current chance to OHKO.</li> -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div id="opponent_pokemon" class="pokemon_input">
+<div class="pokemon_stats">
+<h2>Your Opponent's Stats</h2>
+<div class="pokemon_stats_placeholder">Loading...</div>
+</div>
+
+<div id="preset_lookup">
+<h2>Search</h2>
+<div class="preset_lookup_row">
+    <div class="other_stat_inner"><span class="label">Game</span><select id="ai_preset_game" tabindex="10000"><option value="crystal" selected>Crystal</option><option value="gold">Gold/Silver</option></select></div>
+    <div class="other_stat_inner"><span class="label">Class</span><select id="ai_preset_trainer_class" tabindex="10000"></select></div>
+</div>
+<div class="preset_lookup_row">
+    <div class="other_stat_inner"><span class="label">Trainer</span><select id="ai_preset_trainer" tabindex="10000"></select></div>
+    <div class="other_stat_inner"><span class="label">Pokémon</span><select id="ai_preset_monster" tabindex="10000"></select></div>
+</div>
+</div>
+
+<div id="settings">
+    <h2>Settings</h2>
+    <div class="other_stats">
+        <div class="other_stat_inner"><span class="label">Iteration Granularity</span><select id="settings_per_turn" tabindex="20000"><option value="per_turn">Per Turn</option><option value="per_hit">Per Hit</option></select></div>
+        <div class="other_stat_inner"><span class="label">Max Iterations</span><input type="text" id="settings_max_turns" value="100" tabindex="20000" /></div>
+        <div class="other_stat_inner"><span class="label">Max Damage Rolls</span><input type="text" id="settings_max_damage_rolls" value="1000000" tabindex="20000" /></div>
+        <div class="other_stat_inner"><span class="label">Target KO Chance (%)</span><input type="text" id="settings_ko_chance" value="90" tabindex="20000" /></div>
+    </div>
+    <div class="other_stats">
+        <div class="other_stat_inner">
+            <span class="label">Weather</span>
+            <select id="weather" tabindex="10000">
+                <option value="clear" selected>Clear / Other</option>
+                <option value="sun">Harsh Sunlight</option>
+                <option value="rain">Rain</option>
+            </select>
+        </div>
+        <div class="other_stat_inner">
+            <span class="label">Battle Type</span>
+            <select id="battle_type" tabindex="10000">
+                <option value="ai" selected>Trainer / Wild</option>
+                <option value="pvp">Link Battle / Battle Tower</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+</div>
+
+</div>
+<div id="instructions_button_shower">
+<button id="instructions_show" onclick="show_instructions()">How do I fill this out?</button>
+<div id="instructions">
+    <h2>How do I fill this out?</h2>
+    <p>
+        Please enter your stats as displayed in the status screen, entering your Pokémon's
+        <strong>current</strong> HP.
+    </p>
+    <p>
+        <strong>NOTE:</strong> This tool is <strong>NOT</strong> a stat calculator. It is
+        not assumed that you precisely know what your Pokémon's stat experience and IVs (DVs)
+        are at a given fight, nor is it needed for damage calcs. A stat calculator will be
+        added later, however, to assist with planning.
+    </p>
+    <p>
+        IVs (DVs) are only necessary for calculating Hidden Power. You can leave them at 0,
+        otherwise.
+    </p>
+    <p>
+        Friendship is only necessary for Return and Frustration. You can leave it at 0,
+        otherwise. Note than NPC trainers will have 0 friendship on unmodified games.
+    </p>
+    <p>
+        Badges are needed to calculate badge boosts. These only apply in normal in-game
+        battles, however.
+    </p>
+</div>
+</div>
+
+<footer>
+<ul>
+<li>Copyright © 2026 SnowyMouse</li>
+<li><a href="https://github.com/SnowyMouse/furretcalc">Source Code (GPL v3)</a></li>
+</ul>
+</footer>
+<script src="js/webpage.js" type="module"></script>
+</body>
+</html>

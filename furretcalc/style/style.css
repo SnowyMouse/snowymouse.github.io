@@ -1,0 +1,420 @@
+@font-face {
+    font-family: "Roboto";
+    src: url('./roboto/Roboto-Regular.ttf');
+}
+
+@font-face {
+    font-family: "Roboto Bold";
+    src: url('./roboto/Roboto-Bold.ttf');
+}
+
+@font-face {
+    font-family: "Roboto Condensed";
+    src: url('./roboto/Roboto_Condensed-Regular.ttf');
+}
+
+body {
+    padding: 0;
+    margin: 10px 0 10px 0;
+}
+
+strong {
+    font-family: "Roboto Bold", sans-serif;
+    font-weight: bold;
+}
+
+noscript {
+    display: block;
+    text-align: center;
+    margin-top: 12px;
+    font-family: "Roboto Bold";
+    background-color: red;
+    color: white;
+    font-size: 28px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+noscript a {
+    color: white;
+    font-family: "Roboto Bold";
+}
+
+noscript a:hover {
+    color: #FFEE22;
+}
+
+* {
+    color: #FFEEDD;
+    font-family: "Roboto Condensed", sans-serif;
+    font-weight: normal;
+    box-sizing: border-box;
+}
+
+h1, h2, h3 {
+    font-family: "Roboto Bold";
+}
+
+body {
+    background-color: #1B0F04;
+}
+
+a {
+    color: #FFEEDD;
+}
+
+a:hover {
+    color: #C88746;
+}
+
+footer, header {
+    width: 100%;
+    text-align: center;
+}
+
+#badges_box_outer {
+    font-size: 0;
+    width: 100%;
+    border-top: 1px solid #FFEEDD;
+    padding: 8px;
+}
+
+#badges_box_outer .badge_box {
+    font-size: 14px;
+    width: 120px;
+    display: inline-block;
+    text-align: left;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+#badges_box_outer .badge_box ul li:not(:first-child) {
+    margin-top: 2px;
+}
+
+#badges_box_outer .control_box {
+    display: inline-block;
+    position: absolute;
+    text-align: left;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+#badges_box_outer .control_box button {
+    display: block;
+    margin-bottom: 4px;
+}
+
+#badges_box_outer label {
+    margin-left: 4px;
+}
+
+label {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+footer ul {
+    /* hack to make whitespace from newlines go away */
+    font-size: 0;
+}
+
+footer ul li {
+    font-size: 12px;
+    display: inline-block;
+}
+
+footer ul li:not(:first-child):before {
+    content: "|";
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+header h1 {
+    line-height: 1;
+    margin: 0;
+    font-size: 28px;
+}
+
+table.stat_input {
+    table-layout: fixed;
+    border-spacing: 8px 0;
+    margin-top: 8px;
+}
+
+table.stat_input tr th:first-child, table.stat_input tr td:first-child {
+    width: 35px;
+}
+
+table.stat_input tr th, table.stat_input tr td {
+    text-align: center;
+}
+
+table.stat_input tr td, table.stat_input tr th {
+    font-size: 14px;
+}
+
+input[type="text"], select, button, input[type="checkbox"] {
+    border: 1px solid #C88746;
+    border-radius: 0;
+    background-color: rgba(0,0,0,0);
+    color: #FFEEDD;
+}
+
+button {
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    cursor: pointer;
+}
+
+input[type="checkbox"]:checked, input[type="checkbox"]:active {
+    background-color: #C88746;
+}
+
+button:active {
+    background-color: rgba(255,255,255,0.5);
+    color: #FFFFFF;
+}
+
+.stat_input input,
+.other_stats input,
+.stat_stage {
+    text-align: right;
+}
+
+.stat_input input,
+.other_stats input,
+.stat_input select,
+.other_stats select,
+.field_entry select,
+.preset_lookup_row select {
+    width: 100%;
+}
+
+.pokemon_input * {
+    margin: 0;
+}
+
+.pokemon_input h2 {
+    font-size: 18px;
+    line-height: 1;
+    text-align: center;
+}
+
+.other_stats, .field_entry, .preset_lookup_row {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    margin-top: 6px;
+    gap: 8px;
+}
+
+.other_stat_inner {
+    display: block;
+    text-align: center;
+    flex: 1;
+}
+
+.other_stat_inner .label {
+    font-size: 12px;
+    display: inline-block;
+}
+
+p {
+    line-height: 1;
+    font-size: 14px;
+    margin: 0;
+}
+
+header p {
+    margin: 8px 0 0 0;
+    font-size: 16px;
+}
+
+#instructions, #calculator_content {
+    margin: auto;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    width: 1500px;
+}
+
+#calculator_content {
+    display: flex;
+    border: 2px solid #FFEEDD;
+}
+
+.pokemon_stats {
+    padding: 8px;
+}
+
+.pokemon_input {
+    width: 450px;
+}
+
+.pokemon_input table {
+    width: 100%;
+}
+
+#field_data, #preset_lookup, #settings {
+    border-top: 1px solid #FFEEDD;
+    padding: 8px;
+}
+
+#calc_buffer {
+    flex: 1;
+    border-left: 1px solid #FFEEDD;
+    border-right: 1px solid #FFEEDD;
+    display: flex;
+    flex-direction: column;
+}
+
+#calc_buffer h2 {
+    margin: 0;
+    padding: 0;
+    font-size: 18px;
+    text-align: center;
+}
+
+#calc_buffer h2.you_label {
+    text-align: left;
+}
+
+#calc_buffer h2.opponent_label {
+    text-align: right;
+}
+
+#calc_buffer .calc_element:not(:first-child) {
+    border-top: 1px solid #FFEEDD;
+}
+
+.calc_element {
+    padding: 8px;
+    flex-basis: content;
+}
+
+#notes_buffer_outer {
+    flex: 1;
+}
+
+.damage_outer {
+    width: 100%;
+    height: 100px;
+    border: 1px solid #C88746;
+    margin-top: 8px;
+}
+
+#instructions * {
+    font-family: "Roboto", sans-serif;
+}
+
+#suggestions_and_notes_list {
+    font-size: 14px;
+    list-style: disc;
+    padding-left: 14px;
+    margin-top: 4px;
+}
+
+#suggestions_and_notes_list li:not(:first-child) {
+    margin-top: 4px;
+}
+
+#instructions p {
+    margin-top: 18px;
+}
+
+#instructions h2 {
+    font-size: 18px;
+    margin: 0;
+}
+
+#instructions_button_shower {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+#instructions {
+    width: 800px;
+    height: 100%;
+    font-size: 12px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    border: 1px solid white;
+    padding: 24px;
+    background-color: #442211;
+    display: none;
+    text-align: left;
+}
+
+.stats_move {
+    width: 25%;
+    display: block;
+    float: left;
+    height: 100%;
+    overflow-y: hidden;
+}
+
+.stats_move:not(:first-child) {
+    border-left: 1px solid #C88746;
+}
+
+.stats_move .stats_move_name {
+    text-align: center;
+    width: 100%;
+    height: 16px;
+    border-bottom: 1px solid #C88746;
+    font-size: 14px;
+    display: block;
+}
+
+.stats_move .stats_move_data {
+    display: block;
+    width: 100%;
+    font-size: 11px;
+    padding: 4px;
+}
+
+.stats_move .stats_move_data .range_percentage, .stats_move .stats_move_data .range_turns {
+    font-family: "Hack", monospace;
+    font-size: 11px;
+}
+
+.stats_move .stats_move_data .range_percentage {
+    text-align: right;
+    float: right;
+}
+
+.stats_move .stats_move_data .range_turns {
+    float: left;
+}
+
+.stats_move .stats_move_data .range {
+    text-align: center;
+    display: block;
+    font-family: "Roboto Condensed", sans-serif;
+    margin-bottom: 8px;
+}
+
+.stats_move.best_move {
+    background-color: #443300
+}
+
+.stats_move.ohko_move {
+    background-color: #003300
+}
+
+.stats_move.error_move {
+    background-color: #662222
+}

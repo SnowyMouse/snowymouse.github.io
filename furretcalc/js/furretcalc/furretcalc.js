@@ -389,6 +389,7 @@ function calculate_damage_for_move(move_type, move_data_original, attacker, defe
 
     // calculate all rolls upfront
     let rolls = []
+    const level = attacker.data.level
 
     if(move_data.effect === "EFFECT_REVERSAL") {
         rolls.push([noncrit_damage, 1.0])
@@ -401,13 +402,17 @@ function calculate_damage_for_move(move_type, move_data_original, attacker, defe
         return_value.base = move_data.base_power
         return_value.base_low = move_data.base_power
     }
+    else if(move_data.effect === "EFFECT_LEVEL_DAMAGE") {
+        rolls.push([level, 1.0])
+        return_value.base = level
+        return_value.base_low = level
+    }
     else if(move_data.effect === "EFFECT_OHKO") {
         rolls.push([65535, 1.0])
         return_value.base = 65535
         return_value.base_low = 65535
     }
     else if(move_data.effect === "EFFECT_PSYWAVE") {
-        const level = attacker.data.level
         const max_damage = (level + int_divide(level, 2)) & 255
         if(max_damage === 0) {
             (warnings ?? {})["psywave_warning"] = "Psywave will softlock the game if your level is 0 or 171."

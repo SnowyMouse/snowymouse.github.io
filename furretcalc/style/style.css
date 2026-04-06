@@ -27,7 +27,7 @@ noscript {
     display: block;
     text-align: center;
     margin-top: 12px;
-    font-family: "Roboto Bold";
+    font-family: "Roboto Bold", sans-serif;
     background-color: red;
     color: white;
     font-size: 28px;
@@ -37,7 +37,7 @@ noscript {
 
 noscript a {
     color: white;
-    font-family: "Roboto Bold";
+    font-family: "Roboto Bold", sans-serif;
 }
 
 noscript a:hover {
@@ -52,7 +52,7 @@ noscript a:hover {
 }
 
 h1, h2, h3 {
-    font-family: "Roboto Bold";
+    font-family: "Roboto Bold", sans-serif;
 }
 
 body {
@@ -121,6 +121,12 @@ ul {
     padding: 0;
 }
 
+#instructions ul {
+    list-style-type: circle;
+    margin-left: 16px;
+    padding: 0;
+}
+
 footer ul {
     /* hack to make whitespace from newlines go away */
     font-size: 0;
@@ -168,14 +174,19 @@ input[type="text"], select, button, input[type="checkbox"] {
     color: #FFEEDD;
 }
 
+input[type="text"]:read-only {
+    border: none;
+    color: #CCC;
+}
+
 button {
     cursor: pointer;
 }
 
 input[type="checkbox"] {
     appearance: none;
-    width: 10px;
-    height: 10px;
+    width: 10px !important;
+    height: 10px !important;
     cursor: pointer;
 }
 
@@ -307,6 +318,7 @@ header p {
 
 #notes_buffer_outer {
     flex: 1;
+    display: none;
 }
 
 .damage_outer {
@@ -331,8 +343,9 @@ header p {
     margin-top: 4px;
 }
 
-#instructions p {
+#instructions p, #instructions li {
     margin-top: 18px;
+    font-size: 14px;
 }
 
 #instructions h2 {
@@ -389,15 +402,23 @@ header p {
 .stats_move .stats_move_data .range_percentage, .stats_move .stats_move_data .range_turns {
     font-family: "Hack", monospace;
     font-size: 11px;
+    text-overflow: clip;
+}
+
+.range_clickable {
+    text-decoration: none;
+}
+
+.range_nonclickable {
+    cursor: crosshair;
 }
 
 .stats_move .stats_move_data .range_percentage {
     text-align: right;
-    float: right;
 }
 
 .stats_move .stats_move_data .range_turns {
-    float: left;
+    flex: 1;
 }
 
 .stats_move .stats_move_data .range {
@@ -417,4 +438,49 @@ header p {
 
 .stats_move.error_move {
     background-color: #662222
+}
+
+#range_details {
+    display: none;
+    position: relative;
+}
+
+#range_details table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    text-align: center;
+    width: 100%;
+    margin-top: 4px;
+}
+
+#range_details th {
+    border-bottom: 1px solid #FFEEDD
+}
+#range_details tr:nth-child(even) td {
+    background-color: rgba(255,255,255,0.075);
+}
+#range_details td {
+    font-family: "Hack", monospace;
+    font-size: 12px;
+}
+
+#range_header {
+    text-align: right;
+    right: 8px;
+    font-size: 12px;
+    position: absolute;
+}
+.range_row {
+    display: flex;
+}
+
+#range_details .copypasta {
+    text-align: center;
+    font-size: 12px;
+    border: 1px solid #FFEEDD;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 4px;
+    margin-top: 4px;
+    user-select: all;
+    font-family: "Roboto Bold", sans-serif;
 }

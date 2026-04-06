@@ -1,6 +1,7 @@
 "use strict"
 
 import * as furretcalc from "./furretcalc/furretcalc.js"
+import {get_crystal_pokemon, receives_special_defense_boost} from "./furretcalc/furretcalc.js";
 
 furretcalc.load_furretcalc("./js/furretcalc")
     .then(() => set_up_widgets())
@@ -12,6 +13,8 @@ function recalculate() {
     if(is_calculating) {
         return
     }
+
+    quickly_update_stats()
 
     if(debounce_timer != null) {
         clearTimeout(debounce_timer)
@@ -31,14 +34,19 @@ async function actually_recalculate() {
         is_calculating = true
         await furretcalc.wait_loaded()
 
+        document.getElementById("range_details").style.display = "none"
+        document.getElementById("notes_buffer_outer").style.display = "none"
+
+        move_data_infos = {}
+
         const player_stats = recalculate_stats(true)
         const opponent_stats = recalculate_stats(false)
 
-        let max_rolls = parseInt(document.getElementById("settings_max_damage_rolls").value)
+        let max_rolls = parse_int_clamped(document.getElementById("settings_max_damage_rolls").value, 0, Number.MAX_SAFE_INTEGER)
         if(!isFinite(max_rolls) || max_rolls < 1) { max_rolls = 100 }
-        let max_turns = parseInt(document.getElementById("settings_max_turns").value)
+        let max_turns = parse_int_clamped(document.getElementById("settings_max_turns").value, 0, Number.MAX_SAFE_INTEGER)
         if(!isFinite(max_turns) || max_turns < 1) { max_turns = 100 }
-        let target_ko_chance = parseFloat(document.getElementById("settings_ko_chance").value)
+        let target_ko_chance = parse_float_clamped(document.getElementById("settings_ko_chance").value, 0, 100)
         if(!isFinite(target_ko_chance) || target_ko_chance < 0.0) { max_turns = 0.0 }
         if(target_ko_chance > 100.0) { target_ko_chance = 100.0 }
 
@@ -73,6 +81,10 @@ async function actually_recalculate() {
             data.classList.remove("best_move")
         }
 
+        for(const data of [...document.getElementsByClassName("error_move")]) {
+            data.classList.remove("error_move")
+        }
+
         for(const data of document.getElementsByClassName("stats_move_data")) {
             data.innerHTML = ""
         }
@@ -83,8 +95,8 @@ async function actually_recalculate() {
             suggestions[`warning_${warning_key}`] = warning_text
         }
 
-        format_move_data("#player_damage", player_stats, opponent_stats, player_moves, true, suggestions, properties.per_hit)
-        format_move_data("#enemy_damage", opponent_stats, player_stats, opponent_moves, false, suggestions, properties.per_hit)
+        format_move_data("#player_damage", player_stats, opponent_stats, player_moves, true, suggestions)
+        format_move_data("#enemy_damage", opponent_stats, player_stats, opponent_moves, false, suggestions)
 
         const notes = document.getElementById("suggestions_and_notes_list")
         let html = ""
@@ -94,6 +106,12 @@ async function actually_recalculate() {
         }
 
         notes.innerHTML = html
+
+        if(html !== "") {
+            document.getElementById("notes_buffer_outer").style.display = "block"
+        }
+
+        reshow_range()
     }
     finally {
         is_calculating = false
@@ -103,9 +121,9 @@ async function actually_recalculate() {
 const QUASI_TYPELESS_NOTE = "This move does not receive STAB, type-based badge boosts, weather boosts (or nerfs), or type effectiveness (it does not interact with your opponent's types).\n\nHowever, its typing is still used for determining damage category and item boosts."
 const DISPLAYED_TURN_COUNT = 4
 
-function format_move_data(base_div, stats, stats_opposite, moves, is_player, suggestions, per_hit) {
-    const turn_name = per_hit ? "hit" : "turn"
+let move_data_infos = {}
 
+function format_move_data(base_div, stats, stats_opposite, moves, is_player, suggestions) {
     const all_moves = furretcalc.get_moves()
 
     // Returns <0 if b > a; >0 if a > b; 0 if a == b
@@ -156,6 +174,9 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
     const best_ttk_rating = moves.toSorted((a, b) => -cmp_ttk(a, b))[0]
 
     for(const [index, data] of Object.entries(moves)) {
+        const info_index = `${is_player ? "PLAYER" : "OPPONENT"}_${index}`
+        move_data_infos[info_index] = null
+
         const move_name = stats.data.moves[index]
         if(move_name === "NO_MOVE") {
             continue
@@ -165,6 +186,7 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
             continue
         }
 
+        const index_int = parseInt(index)
         let move_display_name = move_data.name
         if(move_data.effect === "EFFECT_HIDDEN_POWER") {
             const { base_power, type } = furretcalc.get_hidden_power_stats(stats.data.dvs)
@@ -174,13 +196,13 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
             move_display_name = `${move_display_name} ${type}`
         }
 
-        document.querySelector(`${base_div} .stats_move_${parseInt(index) + 1} .stats_move_name`).innerHTML = move_display_name
+        document.querySelector(`${base_div} .stats_move_${index_int + 1} .stats_move_name`).innerHTML = move_display_name
 
-        const div_selector = `${base_div} .stats_move_${parseInt(index) + 1}`
+        const div_selector = `${base_div} .stats_move_${index_int + 1}`
         const div_data = document.querySelector(`${div_selector} .stats_move_data`)
 
         if(typeof data === "string") {
-            div_data.innerHTML = `<span class="range">${data}</span>`
+            div_data.innerHTML = `<span class="range range_nonclickable" title="This is broken. Please fix your input.">${data}</span>`
             document.querySelector(div_selector).classList.add("error_move")
             continue
         }
@@ -188,21 +210,30 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
         if(data == null) {
             continue
         }
-        const {base_low, base, maximum, turn_chances, average} = data
+        const {rolls: { base_low, base, minimum, maximum, average }, turn_chances, properties} = data
+
+        const turn_name = properties.per_hit ? "hit" : "turn"
 
         let data_text = "";
 
-        const min_percent = base_low / stats_opposite.stats.hp
-        const base_percent = base / stats_opposite.stats.hp
+        let displayed_min = base_low
+        let displayed_max = base
 
-        const fixedAmount = base_percent >= 10.0 ? 0 : 1
+        if(document.getElementById("settings_range_display").value === "full_range") {
+            displayed_min = minimum
+            displayed_max = maximum
+        }
 
-        if(base_low === base) {
-            data_text += `<span class="range">${(min_percent * 100.0).toFixed(fixedAmount)}% (${base_low})</span>`
-        }
-        else {
-            data_text += `<span class="range">${(min_percent * 100.0).toFixed(fixedAmount)}% - ${(base_percent * 100.0).toFixed(fixedAmount)}% (${base_low} - ${base})</span>`
-        }
+        const min_percent = displayed_min / stats_opposite.stats.hp
+        const max_percent = displayed_max / stats_opposite.stats.hp
+
+        const fixer = max_percent >= 10.0 ? no_decimal : single_decimal
+
+        let displayed_range = base_low === base ?
+            `${displayed_min} (${fixer(min_percent * 100.0)}%)`
+            : `${displayed_min} - ${displayed_max} (${fixer(min_percent * 100.0)}% - ${fixer(max_percent * 100.0)}%)`
+
+        data_text += `<a href="#" class="range range_clickable" onclick="show_range('${info_index}')">${displayed_range}</a>`
 
         if(turn_chances.some((chance) => chance > 0.0)) {
             let chances = Object.entries(turn_chances)
@@ -217,8 +248,10 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
             }
 
             for(const [t, chance] of chances) {
-                const prefix = `${parseInt(t) + 1} ${turn_name}${t === "0" ? "" : "s"}`
+                const ti = parseInt(t)
+                const prefix = `${ti + 1} ${turn_name}${ti === 0 ? "" : "s"}`
 
+                data_text += `<div class="range_row">`
                 data_text += `<div class="range_turns">${prefix}</div>`
 
                 data_text += `<div class="range_percentage">`
@@ -232,17 +265,23 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
                     data_text += "&gt;99.9"
                 }
                 else {
-                    data_text += (chance * 100.0).toFixed(1)
+                    data_text += single_decimal(chance * 100.0)
                 }
-                data_text += `%</div><br />`
+                data_text += `%</div></div>`
             }
         }
         else {
-            data_text += `<div class=\"range_turns\">Out of range!</div><br /><br />`
+            data_text += `<div class="range_row">`
+            data_text += `<div class=\"range_turns\">Out of range!</div>`
+            data_text += `</div><br />`
+            data_text += `<div class="range_row">`
             data_text += `<div class=\"range_turns\">Min ${turn_name}s</div>`
-            data_text += `<div class=\"range_percentage\">${(stats_opposite.data.stats.hp / maximum).toFixed(1)}</div><br />`
+            data_text += `<div class=\"range_percentage\">${single_decimal(Math.max(stats_opposite.data.stats.hp / maximum, 1))}</div>`
+            data_text += `</div>`
+            data_text += `<div class="range_row">`
             data_text += `<div class=\"range_turns\">Avg ${turn_name}s</div>`
-            data_text += `<div class=\"range_percentage\">${(stats_opposite.data.stats.hp / average).toFixed(1)}</div><br />`
+            data_text += `<div class=\"range_percentage\">${single_decimal(Math.max(stats_opposite.data.stats.hp / average, 1))}</div>`
+            data_text += `</div>`
         }
 
         div_data.innerHTML = data_text
@@ -252,6 +291,10 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
         }
         else if(best_ttk_rating != null && cmp_ttk(best_ttk_rating, data) === 0) {
             document.querySelector(div_selector).classList.add("best_move")
+        }
+
+        move_data_infos[info_index] = {
+            data, move_name, move_data, is_player, stats, stats_opposite, displayed_range, properties, move_display_name
         }
     }
 
@@ -266,17 +309,10 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
                 break
         }
 
-        if(furretcalc.HIGH_CRIT_MOVES.includes(move_name)) {
-            suggestions["crit_note"] = "High-crit moves aren't implemented yet."
-        }
-
         const move_data = all_moves[move_name]
         switch(move_data.effect) {
             case "EFFECT_FUTURE_SIGHT":
                 suggestions["future_sight_note"] = `Future Sight is <u title="${QUASI_TYPELESS_NOTE}">Quasi-Typeless</u>.`
-                if(!per_hit) {
-                    suggestions["future_sight_ttk_note"] = `Future Sight's delay until damage is dealt is not yet implemented.`
-                }
                 break
             case "EFFECT_BEAT_UP":
                 suggestions["beat_up_note"] = `Beat Up is <u title="${QUASI_TYPELESS_NOTE}">Quasi-Typeless</u>.`
@@ -287,18 +323,6 @@ function format_move_data(base_div, stats, stats_opposite, moves, is_player, sug
                 break
             case "EFFECT_FURY_CUTTER":
                 suggestions["fury_cutter_wip"] = `Fury Cutter is not yet implemented. Damage displayed is only for the first hit.`
-                break
-            case "EFFECT_SOLARBEAM":
-            case "EFFECT_FLY":
-            case "EFFECT_DIG":
-                if(!per_hit) {
-                    suggestions["charge_wip"] = `Moves with charging periods are not yet implemented. Damage displayed is per hit.`
-                }
-                break
-            case "EFFECT_HYPER_BEAM":
-                if(!per_hit) {
-                    suggestions["hyper_beam_wip"] = `Hyper Beam's recharge period is not factored in. Damage displayed is per hit.`
-                }
                 break
         }
     }
@@ -335,24 +359,6 @@ function recalculate_stats(is_player) {
     }
 }
 
-function cleanup_number_value(value, min, max) {
-    const int_value = parseInt(value)
-
-    if(!isFinite(int_value)) {
-        return min ?? 0
-    }
-
-    if(min != null && int_value < min) {
-        return min
-    }
-
-    if(max != null && int_value > max) {
-        return max
-    }
-
-    return int_value
-}
-
 function get_badges(is_player) {
     if(!is_player || document.getElementById("battle_type").value !== "ai") {
         return null
@@ -371,34 +377,43 @@ function get_stats(is_player) {
     const stats = {
         stats: {},
         dvs: {},
+        statexp: {},
         stages: {},
         types: [null, null],
         moves: ["NO_MOVE", "NO_MOVE", "NO_MOVE", "NO_MOVE"],
         species: null,
         item: null,
         status: null,
-        level: null
+        level: null,
+        manual_stat_input: false
     }
     for(const stat of document.querySelectorAll(`${get_stats_box(is_player)} input, ${get_stats_box(is_player)} select`)) {
         for(const c of stat.classList) {
             switch(c) {
-                case "hp_stat": stats.stats["hp"] = cleanup_number_value(stat.value, 1, 999); break;
-                case "atk_stat": stats.stats["attack"] = cleanup_number_value(stat.value, 1, 999); break;
-                case "def_stat": stats.stats["defense"] = cleanup_number_value(stat.value, 1, 999); break;
-                case "spa_stat": stats.stats["special_attack"] = cleanup_number_value(stat.value, 1, 999); break;
-                case "spd_stat": stats.stats["special_defense"] = cleanup_number_value(stat.value, 1, 999); break;
-                case "spe_stat": stats.stats["speed"] = cleanup_number_value(stat.value, 1, 999); break;
-                
-                case "atk_dv": stats.dvs["attack"] = cleanup_number_value(stat.value, 0, 15); break;
-                case "def_dv": stats.dvs["defense"] = cleanup_number_value(stat.value, 0, 15); break;
-                case "spc_dv": stats.dvs["special"] = cleanup_number_value(stat.value, 0, 15); break;
-                case "spe_dv": stats.dvs["speed"] = cleanup_number_value(stat.value, 0, 15); break;
+                case "hp_stat": stats.stats["hp"] = parse_int_clamped(stat.value, 1, 999); break;
+                case "atk_stat": stats.stats["attack"] = parse_int_clamped(stat.value, 1, 999); break;
+                case "def_stat": stats.stats["defense"] = parse_int_clamped(stat.value, 1, 999); break;
+                case "spa_stat": stats.stats["special_attack"] = parse_int_clamped(stat.value, 1, 999); break;
+                case "spd_stat": stats.stats["special_defense"] = parse_int_clamped(stat.value, 1, 999); break;
+                case "spe_stat": stats.stats["speed"] = parse_int_clamped(stat.value, 1, 999); break;
 
-                case "atk_stage": stats.stages["attack"] = cleanup_number_value(stat.value, -6, 6); break;
-                case "def_stage": stats.stages["defense"] = cleanup_number_value(stat.value, -6, 6); break;
-                case "spa_stage": stats.stages["special_attack"] = cleanup_number_value(stat.value, -6, 6); break;
-                case "spd_stage": stats.stages["special_defense"] = cleanup_number_value(stat.value, -6, 6); break;
-                case "spe_stage": stats.stages["speed"] = cleanup_number_value(stat.value, -6, 6); break;
+                case "atk_dv": stats.dvs["attack"] = parse_int_clamped(stat.value, 0, 15); break;
+                case "def_dv": stats.dvs["defense"] = parse_int_clamped(stat.value, 0, 15); break;
+                case "spc_dv": stats.dvs["special"] = parse_int_clamped(stat.value, 0, 15); break;
+                case "spe_dv": stats.dvs["speed"] = parse_int_clamped(stat.value, 0, 15); break;
+
+                case "atk_statexp": stats.statexp["attack"] = parse_int_clamped(stat.value, 0, 65535); break;
+                case "def_statexp": stats.statexp["defense"] = parse_int_clamped(stat.value, 0, 65535); break;
+                case "spc_statexp": stats.statexp["special"] = parse_int_clamped(stat.value, 0, 65535); break;
+                case "spe_statexp": stats.statexp["speed"] = parse_int_clamped(stat.value, 0, 65535); break;
+
+                case "atk_stage": stats.stages["attack"] = parse_int_clamped(stat.value, -6, 6); break;
+                case "def_stage": stats.stages["defense"] = parse_int_clamped(stat.value, -6, 6); break;
+                case "spa_stage": stats.stages["special_attack"] = parse_int_clamped(stat.value, -6, 6); break;
+                case "spd_stage": stats.stages["special_defense"] = parse_int_clamped(stat.value, -6, 6); break;
+                case "spe_stage": stats.stages["speed"] = parse_int_clamped(stat.value, -6, 6); break;
+                case "acc_stage": stats.stages["accuracy"] = parse_int_clamped(stat.value, -6, 6); break;
+                case "eva_stage": stats.stages["evasion"] = parse_int_clamped(stat.value, -6, 6); break;
 
                 case "move_1": stats.moves[0] = stat.value; break;
                 case "move_2": stats.moves[1] = stat.value; break;
@@ -409,19 +424,46 @@ function get_stats(is_player) {
                 case "species": stats.species = stat.value; break;
                 case "status": stats.status = stat.value; break;
                 case "friendship": stats.friendship = stat.value; break;
-                case "level": stats.level = parseInt(stat.value); break;
+                case "level": stats.level = parse_int_clamped(stat.value, 0, 255); break;
 
                 case "type_primary": stats.types[0] = furretcalc.Type[stat.value]; break;
                 case "type_secondary": stats.types[1] = furretcalc.Type[stat.value]; break;
+
+                case "manual_stat_input": stats.manual_stat_input = stat.checked; break;
             }
         }
     }
 
-    if(!isFinite(stats.level)) {
-        stats.level = 1
+    if(!stats.manual_stat_input) {
+        const base_stats = furretcalc.get_crystal_pokemon()[stats.species].base_stats
+        stats.stats = furretcalc.calculate_monster_stats(stats.level, base_stats, stats.dvs, stats.statexp)
     }
 
     return stats
+}
+
+function quickly_update_stats(is_player) {
+    if(is_player === undefined) {
+        quickly_update_stats(true)
+        quickly_update_stats(false)
+        return
+    }
+
+    const stats = get_stats(is_player)
+
+    // TODO: make updating these faster
+    document.querySelector(`${get_stats_box(is_player)} .spd_dv`).value = stats.dvs["special"]
+    document.querySelector(`${get_stats_box(is_player)} .spd_statexp`).value = stats.statexp["special"]
+    document.querySelector(`${get_stats_box(is_player)} .hp_dv`).value = furretcalc.calculate_hp_dv(stats.dvs)
+
+    if(!stats.manual_stat_input) {
+        document.querySelector(`${get_stats_box(is_player)} .hp_stat`).value = stats.stats.hp
+        document.querySelector(`${get_stats_box(is_player)} .atk_stat`).value = stats.stats.attack
+        document.querySelector(`${get_stats_box(is_player)} .def_stat`).value = stats.stats.defense
+        document.querySelector(`${get_stats_box(is_player)} .spa_stat`).value = stats.stats.special_attack
+        document.querySelector(`${get_stats_box(is_player)} .spd_stat`).value = stats.stats.special_defense
+        document.querySelector(`${get_stats_box(is_player)} .spe_stat`).value = stats.stats.speed
+    }
 }
 
 function set_up_widgets() {
@@ -430,61 +472,65 @@ function set_up_widgets() {
     // Add in stat placeholder stuff
     for(const placeholder of document.getElementsByClassName("pokemon_stats_placeholder")) {
         // smooth flowing from DVs to stats and then
-        let dv_tabs = tabindex
-        let stat_tabs = dv_tabs + 1
-        let stage_tabs = stat_tabs + 1
-        let misc_tabs = stage_tabs + 1
-
+        let stat_tabs = tabindex
+        let misc_tabs = stat_tabs + 1
 
         placeholder.innerHTML = `
     <table class="stat_input">
     <tr>
         <th></th>
         <th>IVs</th>
+        <th class="statexp_column">Stat EXP</th>
         <th>Stat</th>
         <th>Stage</th>
         <th>Final</th>
     </tr>
     <tr>
         <td title="Hitpoints">HP</td>
-        <td>--</td>
-        <td><input type="text" class="hp_stat" value="0" tabindex="${stat_tabs}"></td>
+        <td><input type="text" class="hp_dv" value="0" tabindex="${stat_tabs}" readonly disabled></td>
+        <td class="statexp_column"><input type="text" class="hp_statexp" value="0" tabindex="${stat_tabs}"></td>
+        <td><input type="text" class="hp_stat premultiplied_stat" value="0" tabindex="${stat_tabs}"></td>
         <td>--</td>
         <td class="hp_final">--</td>
     </tr>
     <tr>
         <td title="Attack">ATK</td>
-        <td><input type="text" class="atk_dv" value="0" tabindex="${dv_tabs}"></td>
-        <td><input type="text" class="atk_stat" value="0" tabindex="${stat_tabs}"></td>
-        <td><select class="atk_stage stat_stage" tabindex="${stage_tabs}"></select></td>
+        <td><input type="text" class="atk_dv" value="0" tabindex="${stat_tabs}"></td>
+        <td class="statexp_column"><input type="text" class="atk_statexp" value="0" tabindex="${stat_tabs}"></td>
+        <td><input type="text" class="atk_stat premultiplied_stat" value="0" tabindex="${stat_tabs}"></td>
+        <td><select class="atk_stage stat_stage" tabindex="${stat_tabs}"></select></td>
         <td class="atk_final">--</td>
     </tr>
     <tr>
         <td title="Defense">DEF</td>
-        <td><input type="text" class="def_dv" value="0" tabindex="${dv_tabs}"></td>
-        <td><input type="text" class="def_stat" value="0" tabindex="${stat_tabs}"</td>
-        <td><select class="def_stage stat_stage" tabindex="${stage_tabs}"></select></td>
+        <td><input type="text" class="def_dv" value="0" tabindex="${stat_tabs}"></td>
+        <td class="statexp_column"><input type="text" class="def_statexp" value="0" tabindex="${stat_tabs}"></td>
+        <td><input type="text" class="def_stat premultiplied_stat" value="0" tabindex="${stat_tabs}"</td>
+        <td><select class="def_stage stat_stage" tabindex="${stat_tabs}"></select></td>
         <td class="def_final">--</td>
     </tr>
     <tr>
         <td title="Special Attack">SPA</td>
-        <td><input type="text" class="spc_dv" value="0" tabindex="${dv_tabs}"></td>
-        <td><input type="text" class="spa_stat" value="0" tabindex="${stat_tabs}"></td>
-        <td><select class="spa_stage stat_stage" tabindex="${stage_tabs}"></select></td>
+        <td><input type="text" class="spc_dv" value="0" tabindex="${stat_tabs}"></td>
+        <td class="statexp_column"><input type="text" class="spc_statexp" value="0" tabindex="${stat_tabs}"></td>
+        <td><input type="text" class="spa_stat premultiplied_stat" value="0" tabindex="${stat_tabs}"></td>
+        <td><select class="spa_stage stat_stage" tabindex="${stat_tabs}"></select></td>
         <td class="spa_final">--</td>
     </tr>
     <tr>
         <td title="Special Defense">SPD</td>
-        <td>--</td>
-        <td><input type="text" class="spd_stat" value="0" tabindex="${stat_tabs}"></td>
-        <td><select class="spd_stage stat_stage" tabindex="${stage_tabs}"></select></td>
+        <td><input type="text" class="spd_dv" value="0" tabindex="${stat_tabs}" readonly disabled></td>
+        <td class="statexp_column"><input type="text" class="spd_statexp" value="0" tabindex="${stat_tabs}" readonly disabled></td>
+        <td><input type="text" class="spd_stat premultiplied_stat" value="0" tabindex="${stat_tabs}"></td>
+        <td><select class="spd_stage stat_stage" tabindex="${stat_tabs}"></select></td>
         <td class="spd_final">--</td>
     </tr>
     <tr>
         <td title="Speed">SPE</td>
-        <td><input type="text" class="spe_dv" value="0" tabindex="${dv_tabs}"></td>
-        <td><input type="text" class="spe_stat" value="0" tabindex="${stat_tabs}"></td>
-        <td><select class="spe_stage stat_stage" tabindex="${stage_tabs}"></select></td>
+        <td><input type="text" class="spe_dv" value="0" tabindex="${stat_tabs}"></td>
+        <td class="statexp_column"><input type="text" class="spe_statexp" value="0" tabindex="${stat_tabs}"></td>
+        <td><input type="text" class="spe_stat premultiplied_stat" value="0" tabindex="${stat_tabs}"></td>
+        <td><select class="spe_stage stat_stage" tabindex="${stat_tabs}"></select></td>
         <td class="spe_final">--</td>
     </tr>
     </table>
@@ -496,7 +542,7 @@ function set_up_widgets() {
         <div class="other_stat_inner"><span class="label">Type 1</span><select class="type_primary typing" tabindex="${misc_tabs}"></select></div>
         <div class="other_stat_inner"><span class="label">Type 2</span><select class="type_secondary typing" tabindex="${misc_tabs}"></select></div>
         <div class="other_stat_inner"><span class="label">Status</span><select class="status" tabindex="${misc_tabs}"></select></div>
-        <div class="other_stat_inner">&nbsp;</div>
+        <div class="other_stat_inner"><span class="label">Manual Stat Input</span><div class="checkbox_filler"><input type="checkbox" class="manual_stat_input" /></div></div>
     </div>
     <div class="other_stats">
         <div class="other_stat_inner"><span class="label">Move #1</span><select class="move_1 move" tabindex="${misc_tabs}"></select></div>
@@ -589,6 +635,10 @@ function set_up_widgets() {
 `
     }
 
+    for(const input of document.querySelectorAll(".manual_stat_input")) {
+        input.addEventListener("input", () => update_manual_stat_input())
+    }
+
     for(const input of document.querySelectorAll("input")) {
         input.addEventListener("input", recalculate)
     }
@@ -613,20 +663,20 @@ function set_up_widgets() {
         species.addEventListener("input", () => { update_typings(false); recalculate() })
     }
 
+    update_manual_stat_input()
+
+    document.querySelector(`${get_stats_box(true)} .atk_dv`).value = 15
+    document.querySelector(`${get_stats_box(true)} .def_dv`).value = 15
+    document.querySelector(`${get_stats_box(true)} .spc_dv`).value = 15
+    document.querySelector(`${get_stats_box(true)} .spe_dv`).value = 15
+
     // FIXME: REMOVE THIS ONCE DONE
     // dummy data
-    document.querySelector(`${get_stats_box(true)} .hp_stat`).value = 249
-    document.querySelector(`${get_stats_box(true)} .atk_stat`).value = 190
-    document.querySelector(`${get_stats_box(true)} .def_stat`).value = 167
-    document.querySelector(`${get_stats_box(true)} .spa_stat`).value = 139
-    document.querySelector(`${get_stats_box(true)} .spd_stat`).value = 139
-    document.querySelector(`${get_stats_box(true)} .spe_stat`).value = 202
-    document.querySelector(`${get_stats_box(true)} .level`).value = 71
+    document.querySelector(`${get_stats_box(true)} .level`).value = 5
     document.querySelector(`${get_stats_box(true)} .friendship`).value = 255
-    document.querySelector(`${get_stats_box(true)} .move_1`).value = "RETURN"
-    document.querySelector(`${get_stats_box(true)} .move_2`).value = "SHADOW_BALL"
-    document.querySelector(`${get_stats_box(true)} .move_3`).value = "HEADBUTT"
-    document.querySelector(`${get_stats_box(true)} .move_4`).value = "FIRE_PUNCH"
+    document.querySelector(`${get_stats_box(true)} .move_1`).value = "SCRATCH"
+    document.querySelector(`${get_stats_box(true)} .move_2`).value = "DEFENSE_CURL"
+    document.querySelector(`${get_stats_box(true)} .move_3`).value = "QUICK_ATTACK"
 
     update_typings(true)
     update_typings(false)
@@ -643,6 +693,25 @@ function teams_to_use() {
     }
 }
 
+function update_manual_stat_input(is_player) {
+    if(is_player === undefined) {
+        update_manual_stat_input(false)
+        update_manual_stat_input(true)
+        return
+    }
+
+    const checked = document.querySelector(`${get_stats_box(is_player)} .manual_stat_input`).checked
+    for(const c of document.querySelectorAll(`${get_stats_box(is_player)} .statexp_column`)) {
+        c.style.display = checked ? "none" : ""
+    }
+    for(const c of document.querySelectorAll(`${get_stats_box(is_player)} .premultiplied_stat`)) {
+        c.readOnly = !checked
+        c.disabled = !checked
+    }
+}
+
+
+
 function refresh_trainer_class_list() {
     let options = ""
 
@@ -654,17 +723,57 @@ function refresh_trainer_class_list() {
             trainer_types.push(name)
         }
     }
+
+    const notable_npcs = ["Rival", "Leader", "Elite Four", "Champion", "Pokémon Trainer", "Lake of Rage Gyarados"]
+
+    let inside_notable_npcs = true
+    options += `<optgroup label="Notable NPCs">`
     
-    for(const k of trainer_types.toSorted()) {
+    for(const k of trainer_types.toSorted((a, b) => {
+        let a_index = notable_npcs.indexOf(a)
+        let b_index = notable_npcs.indexOf(b)
+
+        if(a_index >= 0) {
+            if(b_index >= 0) {
+                return a_index - b_index
+            }
+            return -1
+        }
+        if(b_index >= 0) {
+            return 1
+        }
+        return a.localeCompare(b)
+    })) {
+        if(inside_notable_npcs && !notable_npcs.includes(k)) {
+            inside_notable_npcs = false
+            options += "</optgroup>"
+            options += `<optgroup label="Other NPCs">`
+        }
         options += `<option value=\"${k}\">${k}</option>`
     }
+
+    options += "</option>"
 
     document.getElementById("ai_preset_trainer_class").innerHTML = options
     refresh_trainer_list()
 }
 
+const RIVAL_LOCATIONS = Object.freeze({
+    [1]: "Cherrygrove City",
+    [2]: "Azalea Town",
+    [3]: "Burned Tower",
+    [4]: "Underground",
+    [5]: "Victory Road",
+    [6]: "Mt. Moon",
+    [7]: "Indigo Plateau"
+})
+const CHIKORITA_LINE = Object.freeze(["CHIKORITA", "BAYLEEF", "MEGANIUM"])
+const CYNDAQUIL_LINE = Object.freeze(["CYNDAQUIL", "QUILAVA", "TYPHLOSION"])
+const TOTODILE_LINE = Object.freeze(["TOTODILE", "CROCONAW", "FERALIGATR"])
+
 function refresh_trainer_list() {
     const search = document.getElementById("ai_preset_trainer_class").value
+    const pokemon = get_crystal_pokemon()
     
     let options = ""
 
@@ -749,8 +858,39 @@ function refresh_trainer_list() {
     for(const k of sortedKeys) {
         const v = all[k]
         if(v.length > 1) {
-            for(const [number,entry] of Object.entries(v)) {
-                options += `<option value=${entry}>${k} #${parseInt(number)+1}</option>`
+            if(search === "Rival") {
+                let chikorita_count = 0;
+
+                let split_rival = () => {
+                    chikorita_count++
+                    if(chikorita_count !== 1) {
+                        options += "</optgroup>"
+                    }
+                    options += `<optgroup label="Rival #${chikorita_count} @ ${RIVAL_LOCATIONS[chikorita_count] ?? "Mystery Zone"}">`
+                }
+
+                for(const entry of Object.values(v)) {
+                    const [group, index] = entry.split("-")
+                    const { party } = t[group].trainers[parseInt(index)]
+                    let trainer_type = "Unknown"
+
+                    const starter = party.find(({species}) => CHIKORITA_LINE.includes(species) || TOTODILE_LINE.includes(species) || CYNDAQUIL_LINE.includes(species))
+
+                    if(starter != null) {
+                        if(CHIKORITA_LINE.includes(starter.species)) {
+                            split_rival()
+                        }
+                        trainer_type = pokemon[starter.species].name
+                    }
+
+                    options += `<option value=${entry}>${k} #${chikorita_count} (${trainer_type})</option>`
+                }
+                options += "</optgroup>"
+            }
+            else {
+                for(const [number,entry] of Object.entries(v)) {
+                    options += `<option value=${entry}>${k} #${parseInt(number)+1}</option>`
+                }
             }
         }
         else {
@@ -824,6 +964,13 @@ function refresh_trainer_pokemon_data() {
             case "spc_dv": element.value = group.dvs["special"]; break;
             case "spe_dv": element.value = group.dvs["speed"]; break;
 
+            case "hp_statexp": element.value = 0; break;
+            case "atk_statexp": element.value = 0; break;
+            case "def_statexp": element.value = 0; break;
+            case "spc_statexp": element.value = 0; break;
+            case "spd_statexp": element.value = 0; break;
+            case "spe_statexp": element.value = 0; break;
+
             case "species": element.value = selection.species; break;
             case "item": element.value = selection.item; break;
             case "level": element.value = selection.level; break;
@@ -873,10 +1020,210 @@ function update_typings(is_player) {
     document.querySelector(`${get_stats_box(is_player)} .type_secondary`).value = entry.types[1] ?? "None"
 }
 
+function parse_int_clamped(value, min, max) {
+    const int_value = parseInt(value)
+
+    if(!isFinite(int_value)) {
+        return min ?? 0
+    }
+
+    if(min != null && int_value < min) {
+        return min
+    }
+
+    if(max != null && int_value > max) {
+        return max
+    }
+
+    return int_value
+}
+
+function parse_float_clamped(value, min, max) {
+    const float_value = parseFloat(value)
+
+    if(!isFinite(float_value)) {
+        return min ?? 0
+    }
+
+    if(min != null && float_value < min) {
+        return min
+    }
+
+    if(max != null && float_value > max) {
+        return max
+    }
+
+    return float_value
+}
+
+let currently_displayed_range = null
+
+function show_range(info_index) {
+    const range_details = document.getElementById("range_details")
+    if(info_index == null || info_index === currently_displayed_range) {
+        range_details.style.display = "none"
+        currently_displayed_range = null
+        return
+    }
+
+    currently_displayed_range = info_index
+    reshow_range()
+}
+
+function reshow_range() {
+    function stat_stage_to_string(stage) {
+        if(stage < 0) {
+            return `-${stage}`
+        }
+        if(stage > 0) {
+            return `+${stage}`
+        }
+        return ""
+    }
+
+    const range_details = document.getElementById("range_details")
+    const infos = move_data_infos[currently_displayed_range]
+    if(infos == null) {
+        return
+    }
+
+    const all_pokemon = get_crystal_pokemon()
+
+    const species_from_name = all_pokemon[infos.stats.data.species].name
+    const species_to_name = all_pokemon[infos.stats_opposite.data.species].name
+
+    let html = `<div id='range_header'><a href='#' onclick='show_range(null)'>(Close)</a></div>`
+    const move_name = infos.move_display_name
+
+    let attack_name
+    let defense_name
+    let attack
+    let defense
+
+    let attack_boost_info = []
+    let defense_boost_info = []
+
+    if(infos.data.is_physical) {
+        attack_name = "ATK"
+        defense_name = "DEF"
+        attack = infos.stats.data.stats.attack
+        defense = infos.stats_opposite.data.stats.defense
+        attack_boost_info.push(stat_stage_to_string(infos.stats.data.stages.attack))
+        defense_boost_info.push(stat_stage_to_string(infos.stats_opposite.data.stages.defense))
+
+        const attack_boost = infos.stats.badges?.[furretcalc.StatBadgeBoostIndexCrystal.Attack] ?? false
+        const defense_boost = infos.stats_opposite.badges?.[furretcalc.StatBadgeBoostIndexCrystal.Defense] ?? false
+
+        if(attack_boost) {
+            attack_boost_info.push("+ATK")
+        }
+        if(defense_boost) {
+            defense_boost_info.push("+DEF")
+        }
+    }
+    else {
+        attack_name = "SPA"
+        defense_name = "SPD"
+        attack = infos.stats.data.stats.special_attack
+        defense = infos.stats_opposite.data.stats.special_defense
+        attack_boost_info.push(stat_stage_to_string(infos.stats.data.stages.special_attack))
+        defense_boost_info.push(stat_stage_to_string(infos.stats_opposite.data.stages.special_defense))
+
+        const attack_boost = infos.stats.badges?.[furretcalc.StatBadgeBoostIndexCrystal.Special] ?? false
+        const defense_boost = (infos.stats_opposite.badges?.[furretcalc.StatBadgeBoostIndexCrystal.Special] ?? false) && receives_special_defense_boost(infos.stats_opposite.data.stats.special_attack)
+
+        if(attack_boost) {
+            attack_boost_info.push("+SPA")
+        }
+        if(defense_boost) {
+            defense_boost_info.push("+SPD")
+        }
+    }
+
+    if(infos.stats.badges?.[furretcalc.TypeBadgeBoosts[infos.data.move_data.type]]) {
+        attack_boost_info.push(`+${infos.data.move_data.type}`)
+    }
+
+    attack_boost_info = attack_boost_info.filter((a) => a != null && a !== "")
+    defense_boost_info = defense_boost_info.filter((a) => a != null && a !== "")
+
+    let attack_boost_text = ""
+    let defense_boost_text = ""
+
+    if(attack_boost_info.length > 0) {
+        attack_boost_text = `[${attack_boost_info.join(", ")}]`
+    }
+
+    if(defense_boost_info.length > 0) {
+        defense_boost_text = `[${defense_boost_info.join(", ")}]`
+    }
+
+    let chance_text = " -- "
+    if(infos.data.turn_chances[0] >= 1.0) {
+        chance_text += `Guaranteed OHKO`
+    }
+    else {
+        let found = false
+        for(const [k,v] of Object.entries(infos.data.turn_chances)) {
+            if(v >= infos.properties.cutoff) {
+                if(v < 1.0) {
+                    chance_text += `${single_decimal(v * 100)}% chance to `
+                }
+                else {
+                    chance_text += `Guaranteed `
+                }
+
+                const iteration_index = parseInt(k) + 1
+                if(iteration_index === 1) {
+                    chance_text += "OHKO"
+                }
+                else if(infos.properties.per_hit) {
+                    // can't call it a XHKO because we factor in accuracy, and missing is not hitting
+                    chance_text += `KO in ${iteration_index} attacks`
+                }
+                else {
+                    chance_text += `KO in ${iteration_index} turns`
+                }
+
+                found = true
+                break
+            }
+        }
+
+        if(!found) {
+            chance_text += `KO in ${single_decimal(infos.stats_opposite.stats.hp / infos.data.rolls.average)} turns on average`
+        }
+    }
+
+    html += `<h2>Ranges For ${infos.is_player ? "" : "Opponent's"} ${move_name}</h2>`
+    html += `<div class="copypasta">Lvl. ${infos.stats.data.level} / ${attack} ${attack_name} ${attack_boost_text} ${species_from_name} ${move_name} vs. ${infos.stats.data.stats.hp} HP / ${defense} ${defense_name} ${defense_boost_text} ${species_to_name}: ${infos.displayed_range}${chance_text}</div>`
+    html += "<table><tr><th>Damage</th><th>Probability</th></tr>"
+    if(infos.data.rolls.accuracy < 1.0) {
+        html += `<tr><td>Miss</td><td>${single_decimal(100 - 100 * infos.data.rolls.accuracy)}%</td>`
+    }
+    for(const [damage, probability] of infos.data.rolls.rolls) {
+        html += `<tr><td>${damage}</td><td>${single_decimal(probability * 100 * infos.data.rolls.accuracy)}%</td>`
+    }
+    html += "</table>"
+
+    range_details.innerHTML = html
+
+    range_details.style.display = "block"
+}
+
 window.clear_all_badges = clear_all_badges
 window.select_all_badges = select_all_badges
 window.select_johto_badges = select_johto_badges
+window.show_range = show_range
 window.show_instructions = () => {
     document.getElementById("instructions").style.display = "block"
     document.getElementById("instructions_show").style.display = "none"
+}
+
+function single_decimal(number) {
+    return (Math.floor(Math.abs(number) * 10) / 10 * (number < 0 ? -1 : 1)).toFixed(1)
+}
+
+function no_decimal(number) {
+    return (Math.floor(Math.abs(number)) * (number < 0 ? -1 : 1)).toFixed(0)
 }

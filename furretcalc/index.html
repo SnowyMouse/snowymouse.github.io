@@ -70,6 +70,7 @@
         <h2 class="opponent_label">Your Opponent's Ranges</h2>
         <div id="enemy_damage" class="damage_outer"></div>
     </div>
+    <div class="calc_element" id="range_details"></div>
     <div id="notes_buffer_outer" class="calc_element">
         <h2>Notes</h2>
         <div id="suggestions_and_notes_buffer">
@@ -93,7 +94,7 @@
     <div class="other_stat_inner"><span class="label">Class</span><select id="ai_preset_trainer_class" tabindex="10000"></select></div>
 </div>
 <div class="preset_lookup_row">
-    <div class="other_stat_inner"><span class="label">Trainer</span><select id="ai_preset_trainer" tabindex="10000"></select></div>
+    <div class="other_stat_inner"><span class="label">NPC</span><select id="ai_preset_trainer" tabindex="10000"></select></div>
     <div class="other_stat_inner"><span class="label">Pokémon</span><select id="ai_preset_monster" tabindex="10000"></select></div>
 </div>
 </div>
@@ -102,11 +103,12 @@
     <h2>Settings</h2>
     <div class="other_stats">
         <div class="other_stat_inner"><span class="label">Iteration Granularity</span><select id="settings_per_turn" tabindex="20000"><option value="per_turn">Per Turn</option><option value="per_hit">Per Hit</option></select></div>
-        <div class="other_stat_inner"><span class="label">Max Iterations</span><input type="text" id="settings_max_turns" value="100" tabindex="20000" /></div>
-        <div class="other_stat_inner"><span class="label">Max Damage Rolls</span><input type="text" id="settings_max_damage_rolls" value="1000000" tabindex="20000" /></div>
+        <div class="other_stat_inner"><span class="label">Max Iterations</span><input type="text" id="settings_max_turns" value="200" tabindex="20000" /></div>
+        <div class="other_stat_inner"><span class="label">Max Damage Rolls</span><input type="text" id="settings_max_damage_rolls" value="50000" tabindex="20000" /></div>
         <div class="other_stat_inner"><span class="label">Target KO Chance (%)</span><input type="text" id="settings_ko_chance" value="90" tabindex="20000" /></div>
     </div>
     <div class="other_stats">
+        <div class="other_stat_inner"><span class="label">Range Display</span><select id="settings_range_display" tabindex="20000"><option value="base_damage">Base Damage</option><option value="full_range">Full Range</option></select></div>
         <div class="other_stat_inner">
             <span class="label">Weather</span>
             <select id="weather" tabindex="10000">
@@ -122,6 +124,7 @@
                 <option value="pvp">Link Battle / Battle Tower</option>
             </select>
         </div>
+        <div class="other_stat_inner"></div>
     </div>
 </div>
 
@@ -132,20 +135,18 @@
 <button id="instructions_show" onclick="show_instructions()">How do I fill this out?</button>
 <div id="instructions">
     <h2>How do I fill this out?</h2>
-    <p>
-        Please enter your stats as displayed in the status screen, entering your Pokémon's
-        <strong>current</strong> HP.
-    </p>
-    <p>
-        <strong>NOTE:</strong> This tool is <strong>NOT</strong> a stat calculator. It is
-        not assumed that you precisely know what your Pokémon's stat experience and IVs (DVs)
-        are at a given fight, nor is it needed for damage calcs. A stat calculator will be
-        added later, however, to assist with planning.
-    </p>
-    <p>
-        IVs (DVs) are only necessary for calculating Hidden Power. You can leave them at 0,
-        otherwise.
-    </p>
+    <p>First, you will want to enter your stats.</p>
+    <ul>
+        <li>
+            <strong>Automatic stat input:</strong> Please enter your IVs (DVs) and stat experience. Your stats will be
+            automatically calculated.
+        </li>
+        <li>
+            <strong>Manual stat input:</strong> Please enter your stats as displayed in the status screen. This is handy
+            for playthroughs where you only know the stats in the stat screen. You can still opt to input IVs (DVs) for
+            calculating Hidden Power.
+        </li>
+    </ul>
     <p>
         Friendship is only necessary for Return and Frustration. You can leave it at 0,
         otherwise. Note than NPC trainers will have 0 friendship on unmodified games.

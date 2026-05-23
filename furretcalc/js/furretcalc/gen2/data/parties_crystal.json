@@ -13254,5 +13254,30 @@
                 ]
             }
         ]
+    },
+
+    "GyaradosGroup": {
+        "__comment": "Manually added",
+        "name": "Lake of Rage Gyarados",
+        "dvs": [
+            14,
+            10,
+            10,
+            10
+        ],
+        "trainers": [
+            {
+                "name": "Gyarados",
+                "type": "TRAINERTYPE_NORMAL",
+                "party": [
+                    {
+                        "species": "GYARADOS",
+                        "level": 30,
+                        "item": "NO_ITEM",
+                        "moves": null
+                    }
+                ]
+            }
+        ]
     }
 }

@@ -112,7 +112,13 @@ for c in files:
             continue
         break
     
-    current_pokemon["types"] = types
+    current_pokemon["types"] = []
+    for t in types:
+        if t == "PSYCHIC_TYPE":
+            current_pokemon["types"].append("PSYCHIC")
+        else:
+            current_pokemon["types"].append(t)
+
     current_pokemon["base_stats"] = base
     current_pokemon["level_up_moves"] = []
 
@@ -142,7 +148,7 @@ for pk in pokemon:
             break
         s = [i.strip() for i in db.split(",")]
         if not in_evos:
-            p["level_up_moves"].append({ "level": s[0], "move": s[1] })
+            p["level_up_moves"].append({ "level": int(s[0]), "move": s[1] })
 
     if not found_it:
         print("Failed to locate moves for {}".format(pk))

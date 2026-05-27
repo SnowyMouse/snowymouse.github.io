@@ -936,7 +936,7 @@ function doUpdate() {
                 const speciesIndex = parseInt(document.getElementById(`species-opponent-${i+2}`).value)
                 const speciesName = allPokemon[speciesIndex][0]
                 const supereffectiveMoveText = supereffectiveMoves[i] ? `; supereffective move: ${supereffectiveMoves[i][0]}` : ""
-                const formattedName = `${speciesName} (slot #${i}; priority ${scores[arr[c]]}${supereffectiveMoveText})`
+                const formattedName = `${speciesName} (slot #${i+2}; priority ${scores[arr[c]]}${supereffectiveMoveText})`
                 inOrderText += `<li>${formattedName}</li>`
             }
             return inOrderText

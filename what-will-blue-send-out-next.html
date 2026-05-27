@@ -2,8 +2,8 @@
 
 <!--
 
-    What Will Red Send Out Next?
-    Copyright (C) 2024 Snowy
+    What Will Blue Send Out Next?
+    Copyright (C) 2026 Snowy
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,8 +32,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
-<meta content="What will Red send out next?" property="og:title" />
-<meta content="Tool that tells you what order Red will send out his Pokémon." property="og:description" />
+<meta content="What will Blue send out next?" property="og:title" />
+<meta content="Tool that tells you what order Blue will send out his Pokémon." property="og:description" />
 <style>
 * {
     font-family: 'Roboto Condensed', sans-serif;
@@ -774,31 +774,31 @@ function setup() {
     }
 
     // TODO: make a table that stores all of this; maybe of all boss trainers?
-    document.getElementById(`species-opponent-2`).value = lookupPokemon("Espeon")
-    document.getElementById(`species-opponent-3`).value = lookupPokemon("Snorlax")
-    document.getElementById(`species-opponent-4`).value = lookupPokemon("Venusaur")
-    document.getElementById(`species-opponent-5`).value = lookupPokemon("Charizard")
-    document.getElementById(`species-opponent-6`).value = lookupPokemon("Blastoise")
-    document.getElementById(`move-opponent-2-1`).value = lookupMove("MUD-SLAP")
-    document.getElementById(`move-opponent-2-2`).value = lookupMove("REFLECT")
-    document.getElementById(`move-opponent-2-3`).value = lookupMove("SWIFT")
-    document.getElementById(`move-opponent-2-4`).value = lookupMove("PSYCHIC")
-    document.getElementById(`move-opponent-3-1`).value = lookupMove("AMNESIA")
-    document.getElementById(`move-opponent-3-2`).value = lookupMove("SNORE")
-    document.getElementById(`move-opponent-3-3`).value = lookupMove("REST")
-    document.getElementById(`move-opponent-3-4`).value = lookupMove("BODY SLAM")
-    document.getElementById(`move-opponent-4-1`).value = lookupMove("SUNNY DAY")
-    document.getElementById(`move-opponent-4-2`).value = lookupMove("GIGA DRAIN")
-    document.getElementById(`move-opponent-4-3`).value = lookupMove("SYNTHESIS")
-    document.getElementById(`move-opponent-4-4`).value = lookupMove("SOLARBEAM")
-    document.getElementById(`move-opponent-5-1`).value = lookupMove("FLAMETHROWER")
-    document.getElementById(`move-opponent-5-2`).value = lookupMove("WING ATTACK")
-    document.getElementById(`move-opponent-5-3`).value = lookupMove("SLASH")
-    document.getElementById(`move-opponent-5-4`).value = lookupMove("FIRE SPIN")
-    document.getElementById(`move-opponent-6-1`).value = lookupMove("RAIN DANCE")
-    document.getElementById(`move-opponent-6-2`).value = lookupMove("SURF")
-    document.getElementById(`move-opponent-6-3`).value = lookupMove("BLIZZARD")
-    document.getElementById(`move-opponent-6-4`).value = lookupMove("WHIRLPOOL")
+    document.getElementById(`species-opponent-2`).value = lookupPokemon("Alakazam")
+    document.getElementById(`species-opponent-3`).value = lookupPokemon("Rhydon")
+    document.getElementById(`species-opponent-4`).value = lookupPokemon("Gyarados")
+    document.getElementById(`species-opponent-5`).value = lookupPokemon("Exeggutor")
+    document.getElementById(`species-opponent-6`).value = lookupPokemon("Arcanine")
+    document.getElementById(`move-opponent-2-1`).value = lookupMove("QUICK ATTACK")
+    document.getElementById(`move-opponent-2-2`).value = lookupMove("RECOVER")
+    document.getElementById(`move-opponent-2-3`).value = lookupMove("PSYCHIC")
+    document.getElementById(`move-opponent-2-4`).value = lookupMove("REFLECT")
+    document.getElementById(`move-opponent-3-1`).value = lookupMove("FURY ATTACK")
+    document.getElementById(`move-opponent-3-2`).value = lookupMove("SANDSTORM")
+    document.getElementById(`move-opponent-3-3`).value = lookupMove("ROCK SLIDE")
+    document.getElementById(`move-opponent-3-4`).value = lookupMove("EARTHQUAKE")
+    document.getElementById(`move-opponent-4-1`).value = lookupMove("TWISTER")
+    document.getElementById(`move-opponent-4-2`).value = lookupMove("HYDRO PUMP")
+    document.getElementById(`move-opponent-4-3`).value = lookupMove("RAIN DANCE")
+    document.getElementById(`move-opponent-4-4`).value = lookupMove("HYPER BEAM")
+    document.getElementById(`move-opponent-5-1`).value = lookupMove("SUNNY DAY")
+    document.getElementById(`move-opponent-5-2`).value = lookupMove("LEECH SEED")
+    document.getElementById(`move-opponent-5-3`).value = lookupMove("EGG BOMB")
+    document.getElementById(`move-opponent-5-4`).value = lookupMove("SOLARBEAM")
+    document.getElementById(`move-opponent-6-1`).value = lookupMove("ROAR")
+    document.getElementById(`move-opponent-6-2`).value = lookupMove("SWIFT")
+    document.getElementById(`move-opponent-6-3`).value = lookupMove("FLAMETHROWER")
+    document.getElementById(`move-opponent-6-4`).value = lookupMove("EXTREMESPEED")
 }
 function isSuperEffective(moveType, pokemonType1, pokemonType2 = undefined) {
     if(moveType == null || pokemonType1 == null) {
@@ -1001,7 +1001,7 @@ function doUpdateSpecies() {
 <body>
 <div style="margin: auto; max-width: 880px">
 <noscript>NOTE: You need JavaScript to use this page! (NOTE: All JS on this page is free, and no external JS is embedded in this page)</noscript>
-<h1>What Pokémon will Red use? <span style="font-size: small;">(For Blue's team, go <a href="./what-will-blue-send-out-next.html">here</a>)</span></h1>
+<h1>What Pokémon will Blue use? <span style="font-size: small;">(For Red's team, go <a href="./what-will-red-send-out-next.html">here</a>)</span></h1>
 <p>AI's Pokémon (starting from the second slot)</p>
 <table>
     <tr><th>Slot</th><th>Species</th><th>Move 1</th><th>Move 2</th><th>Move 3</th><th>Move 4</th></tr>

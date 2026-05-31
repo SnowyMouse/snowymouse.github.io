@@ -343,6 +343,22 @@ header p {
     margin-top: 24px;
 }
 
+.simple_speed_display {
+    position: absolute;
+    font-size: 10px;
+    font-family: "Roboto Condensed", sans-serif;
+}
+
+#player_pokemon_speed_display {
+    right: 0;
+    top: 8px;
+}
+
+#opponent_pokemon_speed_display {
+    left: 0;
+    top: 8px;
+}
+
 #calculator_content {
     display: flex;
     margin-top: 4px;
@@ -385,6 +401,7 @@ header p {
 .calc_element {
     margin-bottom: 8px;
     flex-basis: content;
+    position: relative;
 }
 
 #notes_buffer_outer {
@@ -661,5 +678,12 @@ header p {
         width: 100%;
         margin-left: 0;
         margin-right: 0;
+    }
+}
+
+/** 350px - Extra, extra small devices */
+@media screen and (max-width: 350px) {
+    .simple_speed_display {
+        display: none
     }
 }

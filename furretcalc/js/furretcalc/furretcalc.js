@@ -198,6 +198,7 @@ function calculate_damage_for_move(move_type, attacker, defender, warnings, prop
     const generation = generation_of_game(game)
 
     const moves = get_moves(game)
+    const items = get_items(game)
     const move_data_original = moves[move_type]
 
     let { per_hit, weather, max_rolls, max_turns, cutoff } = properties
@@ -381,7 +382,8 @@ function calculate_damage_for_move(move_type, attacker, defender, warnings, prop
         per_hit,
         accuracy,
         0,
-        recovery_per_turn
+        recovery_per_turn,
+        defender.data.item && items[defender.data.item]
     )
 
     return_value.rolls.accuracy = accuracy
@@ -693,15 +695,17 @@ function combine_rolls(rolls, defender) {
     return new_rolls
 }
 
-function calculate_damage_rolls_against_hp(move_data, starting_hp, max_hp, return_value, cutoff, max_turns, max_rolls, per_hit, accuracy, starting_successful_moves_in_a_row, healing_per_turn) {
+const RECURSIVE_ITEMS = Object.freeze(["Berry", "Gold Berry"])
+
+function calculate_damage_rolls_against_hp(move_data, starting_hp, max_hp, return_value, cutoff, max_turns, max_rolls, per_hit, accuracy, starting_successful_moves_in_a_row, healing_per_turn, defensive_item) {
     if(starting_hp > max_hp || max_hp <= 0 || starting_hp <= 0) {
         throw new Error(`invalid HP: ${starting_hp} / ${max_hp}`)
     }
     
     const rolls = return_value.rolls.rolls
 
-    if(move_data.effect === "EFFECT_HYPER_BEAM" || move_data.effect === "EFFECT_FURY_CUTTER" || move_data.effect === "EFFECT_ROLLOUT") {
-        calculate_damage_rolls_against_hp_recursive(move_data, starting_hp, max_hp, rolls, return_value, cutoff, max_turns, max_rolls, per_hit, accuracy, starting_successful_moves_in_a_row, healing_per_turn)
+    if(move_data.effect === "EFFECT_HYPER_BEAM" || move_data.effect === "EFFECT_FURY_CUTTER" || move_data.effect === "EFFECT_ROLLOUT" || defensive_item?.effect === "HELD_BERRY") {
+        calculate_damage_rolls_against_hp_recursive(move_data, starting_hp, max_hp, rolls, return_value, cutoff, max_turns, max_rolls, per_hit, accuracy, starting_successful_moves_in_a_row, healing_per_turn, defensive_item)
         return
     }
 
@@ -777,27 +781,34 @@ function calculate_damage_rolls_against_hp(move_data, starting_hp, max_hp, retur
     }
 }
 
-function calculate_damage_rolls_against_hp_recursive(move_data, starting_hp, max_hp, rolls, return_value, cutoff, max_turns, max_rolls, per_hit, accuracy, starting_successful_moves_in_a_row, healing_per_turn) {
+function calculate_damage_rolls_against_hp_recursive(move_data, starting_hp, max_hp, rolls, return_value, cutoff, max_turns, max_rolls, per_hit, accuracy, starting_successful_moves_in_a_row, healing_per_turn, defensive_item) {
     // A slower, recursive approach for move effects difficult to figure out linearly
 
     const must_recharge = !per_hit && move_data.effect === "EFFECT_HYPER_BEAM"
-    const total_turns = Math.floor(Math.min(Math.log2(max_rolls) / Math.log2(rolls.length), max_turns))
+    const estimated_turns = Math.ceil(Math.log2(max_rolls) / Math.log2(rolls.length))
+    const total_turns = Math.floor(Math.min(estimated_turns, max_turns))
 
     const chances = []
     for(let i = 0; i < total_turns; i++) {
         chances.push(0)
     }
 
-    function inner(remaining_hp, turn_index, current_universe_chance, successful_moves_in_a_row) {
+    function inner(remaining_hp, turn_index, current_universe_chance, successful_moves_in_a_row, current_defensive_item) {
         if(chances[turn_index] == null) {
             return
         }
 
         successful_moves_in_a_row = successful_moves_in_a_row & 255
 
+        if(current_defensive_item?.effect === "HELD_BERRY" && remaining_hp <= max_hp / 2) {
+            remaining_hp += current_defensive_item.parameter
+            current_defensive_item = null
+            remaining_hp = Math.min(remaining_hp, max_hp)
+        }
+
         if(successful_moves_in_a_row > 0 && must_recharge) {
             // recharge turn
-            return inner(remaining_hp, turn_index + 1, current_universe_chance, 0)
+            return inner(remaining_hp, turn_index + 1, current_universe_chance, 0, current_defensive_item)
         }
 
         let multiplier = 1
@@ -820,16 +831,16 @@ function calculate_damage_rolls_against_hp_recursive(move_data, starting_hp, max
                 continue
             }
 
-            inner(Math.min(remaining_hp_after_damage + healing_per_turn, turn_index + 1, max_hp), total_probability, successful_moves_in_a_row + 1)
+            inner(Math.min(remaining_hp_after_damage + healing_per_turn, max_hp), turn_index + 1, total_probability, successful_moves_in_a_row + 1, current_defensive_item)
         }
 
         // But what if we miss?
         if(accuracy < 1.0) {
-            inner(Math.min(remaining_hp + healing_per_turn, turn_index + 1, max_hp), turn_index + 1, current_universe_chance * (1.0 - accuracy), 0)
+            inner(Math.min(remaining_hp + healing_per_turn, max_hp), turn_index + 1, current_universe_chance * (1.0 - accuracy), 0, current_defensive_item)
         }
     }
 
-    inner(starting_hp, 0, 1, starting_successful_moves_in_a_row)
+    inner(starting_hp, 0, 1, starting_successful_moves_in_a_row, defensive_item)
 
     for(let v of chances) {
         if(v < 0.000001) {

@@ -111,6 +111,24 @@ async function actually_recalculate() {
         format_move_data("#player_damage", player_stats, opponent_stats, player_moves, true, suggestions)
         format_move_data("#enemy_damage", opponent_stats, player_stats, opponent_moves, false, suggestions)
 
+        const player_speed_indicator = document.getElementById("player_pokemon_speed_display")
+        const opponent_speed_indicator = document.getElementById("opponent_pokemon_speed_display")
+
+        console.log(player_stats, opponent_stats)
+
+        if(player_stats.stats.speed > opponent_stats.stats.speed) {
+            player_speed_indicator.innerText = "(outspeeds)"
+            opponent_speed_indicator.innerText = ""
+        }
+        else if(player_stats.stats.speed < opponent_stats.stats.speed) {
+            player_speed_indicator.innerText = ""
+            opponent_speed_indicator.innerText = "(outspeeds)"
+        }
+        else {
+            player_speed_indicator.innerText = "(speed tie)"
+            opponent_speed_indicator.innerText = "(speed tie)"
+        }
+
         const notes = document.getElementById("suggestions_and_notes_list")
         let html = ""
 
@@ -1293,6 +1311,7 @@ function reshow_range() {
     }
 
     const all_pokemon = furretcalc.get_pokemon(game)
+    const all_items = furretcalc.get_items(game)
 
     const species_from_name = all_pokemon[infos.stats.data.species].name
     const species_to_name = all_pokemon[infos.stats_opposite.data.species].name
@@ -1357,10 +1376,16 @@ function reshow_range() {
         attack_boost_info.push(`+${infos.data.move_data.type}-Badge`)
     }
 
-    const item_data = furretcalc.get_items(game)[infos.stats.data.item]
-    if(item_data != null && furretcalc.get_type_boost_items(game)[item_data.effect] === infos.data.move_data.type) {
+    const attacker_item_data = all_items[infos.stats.data.item]
+    if(attacker_item_data != null && furretcalc.get_type_boost_items(game)[attacker_item_data.effect] === infos.data.move_data.type) {
         attack_boost_info.push(`+${infos.data.move_data.type}-Item`)
     }
+
+    const defender_item_data = all_items[infos.stats_opposite.data.item]
+    if(defender_item_data != null && defender_item_data.effect === "HELD_BERRY") {
+        defense_boost_info.push(`+${defender_item_data.parameter}HP-Berry-Item`)
+    }
+
     if(infos.data.recovery_per_turn > 0) {
         defense_boost_info.push(`+${infos.data.recovery_per_turn} HP/turn`)
     }

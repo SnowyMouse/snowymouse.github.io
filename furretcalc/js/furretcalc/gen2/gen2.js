@@ -87,12 +87,13 @@ export const EFFECT_TO_TYPE_BOOST = Object.freeze({
 
 const ITEM_GROUPS_DEFINITION = Object.freeze({
     "Type-Based Boosts": Object.freeze(Object.keys(EFFECT_TO_TYPE_BOOST)),
-    "HP Recovery Items": [
-        "Leftovers"
-    ],
-    "Broken Items": [
+    "HP Recovery Items": Object.freeze([
+        "Leftovers",
+        "HELD_BERRY"
+    ]),
+    "Broken Items": Object.freeze([
         "Dragon Fang"
-    ]
+    ])
 })
 
 export function calculate_damage_subtotal(move_data, attacker, stats, is_crit) {
